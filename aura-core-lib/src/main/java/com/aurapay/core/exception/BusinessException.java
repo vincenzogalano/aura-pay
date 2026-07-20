@@ -9,12 +9,17 @@ public class BusinessException extends AuraException {
 
     public BusinessException(String message) {
         super(message);
-        this.errorCode = "BUSINESS_ERROR";
+        this.errorCode = AuraErrorCode.BUSINESS_ERROR.getCode();
     }
 
     public BusinessException(String errorCode, String message) {
         super(message);
         this.errorCode = errorCode;
+    }
+
+    public BusinessException(AuraErrorCode errorCode, String message) {
+        super(message);
+        this.errorCode = errorCode.getCode();
     }
 
     public String getErrorCode() {

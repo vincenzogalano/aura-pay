@@ -22,14 +22,14 @@ Di seguito è riportato l'ordine sequenziale delle sessioni di sviluppo. Ciascun
 *   **Stato:** `Completato [x]`
 *   **Risultato atteso:** Il progetto compila vuoto, l'infrastruttura locale parte con `docker compose up -d`, il repo Git è pronto per essere inviato a GitHub.
 
-### 🟢 Sessione 2: aura-core-lib (Libreria Condivisa) (Questa sessione)
+### 🟢 Sessione 2: aura-core-lib (Libreria Condivisa)
 *   **Obiettivo:** Creazione del modulo condiviso. Definizione dei modelli degli eventi Kafka comuni (18 Java 21 Event Records), classi base per eccezioni, DTO di errore standard e security utility per la firma HMAC-SHA256, cifratura AES-256 GCM, mascheramento carte e hashing BCrypt API key. Creata guida allo studio `docs/module_structure_guide.md`.
 *   **Stato:** `Completato [x]`
 *   **Dipendenze:** Sessione 1
 
-### ⚪ Sessione 3: Bank Simulator & API Gateway
-*   **Obiettivo:** Setup del simulatore bancario e di Spring Cloud Gateway per instradare le richieste.
-*   **Stato:** `Non Iniziato [ ]`
+### 🟢 Sessione 3: Bank Simulator & API Gateway (Questa sessione)
+*   **Obiettivo:** Setup di Spring Cloud Gateway reattivo (`aura-api-gateway`, porta 8080) per routing, CORS, tracciamento distributed tracing `X-Correlation-ID` e gestione unificata degli errori; e del simulatore bancario (`aura-bank-simulator`, porta 8086) con motore a regole deterministiche (Magic Rules *99, *98, *97, *95), latenza artificiale e pubblicazione eventi audit `BankAuthorizationResultEvent` su Kafka. Aggiornata la guida allo studio `docs/module_structure_guide.md`.
+*   **Stato:** `Completato [x]`
 *   **Dipendenze:** Sessione 2
 
 ### ⚪ Sessione 4: Vault Service (Tokenizzazione Carte)

@@ -5,7 +5,8 @@ Questo documento funge da **manuale architetturale dinamico** per lo studio e la
 ---
 
 ## Indice dei Moduli
-1. [aura-core-lib (Libreria Condivisa)](#1-aura-core-lib-libreria-condivisa---sessione-2)
+1. [aura-core-lib (Libreria Condivisa) — Sessione 2](#1-aura-core-lib-libreria-condivisa---sessione-2)
+2. [aura-api-gateway & aura-bank-simulator — Sessione 3](#2-aura-api-gateway--aura-bank-simulator---sessione-3)
 
 ---
 
@@ -25,6 +26,9 @@ Questo documento funge da **manuale architetturale dinamico** per lo studio e la
 aura-core-lib/
 └── src/
     ├── main/java/com/aurapay/core/
+    │   ├── constants/
+    │   │   └── AuraHeaders.java                          # Costanti per header HTTP standard (X-Correlation-ID, Idempotency-Key)
+    │   │
     │   ├── events/
     │   │   ├── DomainEvent.java                          # Interfaccia base per tutti gli eventi
     │   │   ├── EventType.java                            # Enum dei 18 eventi + costanti Topic Kafka
@@ -46,8 +50,10 @@ aura-core-lib/
     │   │   ├── WebhookDeliveryDeadLetteredEvent.java     # Record evento esaurimento retry webhook
     │   │   ├── LedgerEntryRecordedEvent.java             # Record evento scrittura contabile
     │   │   └── BankAuthorizationResultEvent.java         # Record evento esito banca
+    │   │   ├── BankResponseCode.java                     # Enum dei codici esito bancario ISO 8583 (00, 51, 54, 59, 96)
     │   │
     │   ├── exception/
+    │   │   ├── AuraErrorCode.java                        # Enum centralizzata dei codici di errore di dominio
     │   │   ├── AuraException.java                        # RuntimeException radice del sistema
     │   │   ├── BusinessException.java                    # Eccezione base per errori di business
     │   │   ├── ResourceNotFoundException.java            # Entità non trovata (404)
@@ -129,3 +135,115 @@ aura-core-lib/
   * *A*: Utilizziamo `MessageDigest.isEqual()` in `HmacUtils` per confrontare le firme generata ed attesa a tempo costante, eliminando la vulnerabilità dovuta alla terminazione anticipata dei confronti di stringhe standard.
 * **Q: Perché avete scelto AES GCM invece di AES CBC per la cifratura dei dati at-rest?**
   * *A*: AES GCM fornisce Authentic Encryption (AEAD). Oltre a cifrare il dato, include un tag di autenticazione a 128 bit che protegge il payload da qualsiasi manomissione o bit-flipping prima della decifratura.
+
+---
+
+## 2. `aura-api-gateway` & `aura-bank-simulator` — Sessione 3
+
+### Scopo dei Moduli
+In questa sessione sono stati creati i due microservizi di ingresso e di simulazione bancaria:
+
+1. **`aura-api-gateway` (Spring Cloud Gateway - Reactive WebFlux)**:
+   * **Single Point of Entry**: Esposto sulla porta `8080`, gestisce il routing dinamico di tutte le chiamate REST dirette ai microservizi downstream (`/v1/merchants/**`, `/v1/payments/**`, `/v1/invoices/**`, `/v1/bank/**`).
+   * **Distributed Tracing Header**: Genera e propaga l'header `X-Correlation-ID` su tutte le richieste in ingresso ed in uscita verso i microservizi.
+   * **Global CORS & Standard Error Translation**: Configurazione centralizzata CORS per la SPA React e gestore eccezioni reattivo (`GlobalErrorWebExceptionHandler`) per risposte HTTP d'errore uniformi (`ErrorResponse`).
+
+2. **`aura-bank-simulator` (Spring Boot 3.x REST Microservice)**:
+   * **Acquiring Bank Simulator**: Esposto sulla porta `8086`, simula le risposte di autorizzazione delle reti di pagamento e di gestione rimborsi.
+   * **Magic Rules Engine**: Regole deterministiche per simulare fondi insufficienti (`*99`), carta scaduta (`*98`), frode (`*97`), timeout di rete (`*95`) o approvazione immediata.
+   * **Audit Event Publishing**: Pubblica l'evento `BankAuthorizationResultEvent` (da `aura-core-lib`) sul topic Kafka `aura.bank.authorization_result.v1`.
+
+---
+
+### Struttura dei Pacchetti e dei File
+
+```
+aura-api-gateway/
+├── Dockerfile
+├── pom.xml
+└── src/
+    ├── main/
+    │   ├── java/com/aurapay/gateway/
+    │   │   ├── AuraApiGatewayApplication.java            # Main application class
+    │   │   ├── config/
+    │   │   │   └── CorsConfig.java                        # Configurazione CORS Reactive WebFilter
+    │   │   ├── exception/
+    │   │   │   └── GlobalErrorWebExceptionHandler.java    # Exception Handler WebFlux -> ErrorResponse DTO
+    │   │   └── filter/
+    │   │       └── CorrelationIdFilter.java               # Global Gateway Filter per X-Correlation-ID
+    │   └── resources/
+    │       └── application.yml                            # Route definitions & Redis config
+    └── test/
+        └── java/com/aurapay/gateway/
+            └── AuraApiGatewayApplicationTests.java        # Spring Cloud Gateway WebTestClient integration test
+
+aura-bank-simulator/
+├── Dockerfile
+├── pom.xml
+└── src/
+    ├── main/
+    │   ├── java/com/aurapay/banksimulator/
+    │   │   ├── AuraBankSimulatorApplication.java         # Main application class
+    │   │   ├── controller/
+    │   │   │   └── BankSimulatorController.java          # Endpoint /v1/bank/authorize & /v1/bank/refund
+    │   │   ├── dto/
+    │   │   │   ├── BankAuthorizationRequest.java          # Request payload autorizzazione
+    │   │   │   ├── BankAuthorizationResponse.java         # Response payload autorizzazione
+    │   │   │   ├── BankRefundRequest.java                 # Request payload rimborso
+    │   │   │   └── BankRefundResponse.java                # Response payload rimborso
+    │   │   ├── exception/
+    │   │   │   └── GlobalExceptionHandler.java            # RestControllerAdvice -> ErrorResponse DTO
+    │   │   ├── publisher/
+    │   │   │   └── BankEventPublisher.java                # Componente dedicato all'invio eventi Kafka
+    │   │   ├── service/
+    │   │   │   └── BankSimulatorService.java              # Magic rules engine per autorizzazioni e rimborsi
+    │   │   └── util/
+    │   │       └── LatencyUtils.java                      # Utility final per simulazione latenza di rete
+    │   └── resources/
+    │       └── application.yml                            # Port 8086, Kafka bootstrap & latency properties
+    └── test/
+        └── java/com/aurapay/banksimulator/
+            ├── controller/
+            │   └── BankSimulatorControllerTest.java       # WebMvcTest per validazione DTO ed HTTP responses
+            └── service/
+                └── BankSimulatorServiceTest.java          # Unit test regole deterministiche & eccezioni
+```
+
+---
+
+### Dettaglio delle Classi e delle Scelte di Design
+
+#### 1. `com.aurapay.gateway` (API Gateway)
+* **Perché Spring Cloud Gateway (WebFlux / Netty) rispetto a Spring MVC / Tomcat?**
+  * Spring Cloud Gateway si basa sul paradigm **Non-Blocking I/O (Reactive WebFlux)**.
+  * In un API Gateway che instrada migliaia di chiamate I/O concorrenti verso microservizi backend, l'architettura reattiva evita il blocco dei thread del server (thread starvation), garantendo footprint di memoria minimo ed elevatissimo throughput.
+* **`CorrelationIdFilter`**:
+  * Implementa `GlobalFilter` e `Ordered` con priorità `HIGHEST_PRECEDENCE`.
+  * Ispeziona l'header `X-Correlation-ID`. Se mancante, ne genera uno nuovo via `UUID.randomUUID().toString()`.
+  * Inietta l'header sia nella richiesta in corso diretta ai microservizi downstream (`request.mutate().header(...)`), sia nella risposta HTTP diretta al client (`response.getHeaders().add(...)`).
+* **`GlobalErrorWebExceptionHandler`**:
+  * Implementa `ErrorWebExceptionHandler` per catturare qualsiasi eccezione generata all'interno della pipeline del Gateway (es. 404 Route Not Found, 429 Rate Limited, 503 Service Unavailable).
+  * Converte lo stato HTTP ed il messaggio di errore nel formato JSON standard `ErrorResponse` di `aura-core-lib`, restituendo `application/json` con UTF-8 encoding.
+
+#### 2. `com.aurapay.banksimulator` (Bank Simulator)
+* **`BankSimulatorService`**:
+  * **Algoritmo Magic Rules**: Analizza l'importo della transazione `amountCents` tramite l'operatore modulo 100 (`amountCents % 100`).
+    * `99` -> Rifiutato per `INSUFFICIENT_FUNDS` (`responseCode: 51`).
+    * `98` -> Rifiutato per `EXPIRED_CARD` (`responseCode: 54`).
+    * `97` -> Rifiutato per `SUSPECTED_FRAUD` (`responseCode: 59`).
+    * `95` -> Timeout simulato (`BusinessException` con codice `BANK_UNAVAILABLE`).
+    * Qualsiasi altro importo -> Approvato (`responseCode: 00`, `authorized: true`, genera `transactionId` univoco `tx_bank_...` ed `authorizationCode` `AUTH_...`).
+  * **Simulazione Latenza Netted**: Configurato tramite `${aurapay.bank.simulated-latency-ms:100}` per riprodurre in modo controllato i tempi di trasmissione di rete verso circuiti internazionali.
+  * **Pubblicazione Eventi di Audit**: Ogni tentativo di autorizzazione invia un messaggio `BankAuthorizationResultEvent` su Kafka topic `aura.bank.authorization_result.v1`.
+* **`GlobalExceptionHandler` (`@RestControllerAdvice`)**:
+  * Intercetta `BusinessException` e `MethodArgumentNotValidException`, mappando i messaggi ed eventuali `FieldErrorDto` nel formato `ErrorResponse`.
+
+---
+
+### Spunti di Discussione per Colloqui / Technical Reviews
+* **Q: Perché il Gateway è realizzato con Spring Cloud Gateway Reattivo anziché un normale controller Spring MVC?**
+  * *A*: L'API Gateway è il bottleneck di ingresso dell'intero sistema. Usare il modello reattivo non-blocking (Netty + Reactor) consente di gestire un numero elevatissimo di connessioni HTTP simultanee mantenendo bassissimo l'uso di RAM e la CPU, senza riservare un thread per ciascuna richiesta pendente.
+* **Q: Come tracciate una richiesta che attraversa molteplici microservizi partendo dal Gateway?**
+  * *A*: Attraverso il `CorrelationIdFilter`, il Gateway genera (o mantiene) un header unico `X-Correlation-ID`. Tutti i microservizi trasmettono questo header nelle loro chiamate HTTP downstream e nei log (MDC), permettendo di correlare istantaneamente tutti i log appartenenti ad un singola transazione.
+* **Q: Come funziona il meccanismo di Magic Numbers nel Bank Simulator?**
+  * *A*: Per evitare di introdurre dipendenze da banche esterne o chiavi fittizie complesse, utilizziamo gli ultimi due numeri dell'importo in centesimi per pilotare in modo deterministico l'esito della transazione (es. 10.99€ simula fondi insufficienti, 10.95€ simula timeout). Questo approccio rende estremamente semplice ed immediata la scrittura di test automatici E2E per casi negativi ed edge-cases.

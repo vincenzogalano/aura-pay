@@ -1,0 +1,26 @@
+server:
+  port: 8086
+
+spring:
+  application:
+    name: aura-bank-simulator
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+aurapay:
+  bank:
+    simulated-latency-ms: ${BANK_SIMULATED_LATENCY_MS:100}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+  endpoint:
+    health:
+      show-details: always

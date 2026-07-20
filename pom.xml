@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.1</version>
+        <version>3.4.3</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
@@ -21,15 +21,25 @@
 
     <properties>
         <java.version>21</java.version>
-        <spring-cloud.version>2023.0.2</spring-cloud.version>
-        <!-- Fix per vulnerabilità di sicurezza e CVE (Jackson, Spring Security, AssertJ) -->
-        <jackson.version>2.18.2</jackson.version>
-        <spring-security.version>6.4.2</spring-security.version>
+        <spring-cloud.version>2024.0.0</spring-cloud.version>
+        <!-- Security Fixes & Latest Patch Level Overrides -->
+        <spring-framework.version>6.2.3</spring-framework.version>
+        <spring-security.version>6.4.4</spring-security.version>
+        <spring-cloud-gateway.version>4.2.1</spring-cloud-gateway.version>
+        <jackson.version>2.18.3</jackson.version>
         <assertj.version>3.27.3</assertj.version>
+        <netty.version>4.1.120.Final</netty.version>
+        <reactor-netty.version>1.2.3</reactor-netty.version>
+        <logback.version>1.5.16</logback.version>
+        <json-smart.version>2.5.2</json-smart.version>
+        <xmlunit.version>2.10.0</xmlunit.version>
+        <bouncycastle.version>1.81</bouncycastle.version>
     </properties>
 
     <modules>
         <module>aura-core-lib</module>
+        <module>aura-api-gateway</module>
+        <module>aura-bank-simulator</module>
     </modules>
 
     <dependencyManagement>
@@ -41,10 +51,54 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
+            <!-- Force safe versions for Netty, Jackson, Spring Security & BouncyCastle -->
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-bom</artifactId>
+                <version>${netty.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-crypto</artifactId>
+                <version>${spring-security.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.minidev</groupId>
+                <artifactId>json-smart</artifactId>
+                <version>${json-smart.version}</version>
+            </dependency>
+
             <!-- Definiamo le versioni dei moduli interni per evitare disallineamenti -->
             <dependency>
                 <groupId>com.aurapay</groupId>
                 <artifactId>aura-core-lib</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aurapay</groupId>
+                <artifactId>aura-api-gateway</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aurapay</groupId>
+                <artifactId>aura-bank-simulator</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

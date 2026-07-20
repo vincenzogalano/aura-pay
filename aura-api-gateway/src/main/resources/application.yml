@@ -1,0 +1,38 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: aura-api-gateway
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  cloud:
+    gateway:
+      routes:
+        - id: merchant-service-route
+          uri: ${SERVICES_MERCHANT_URL:http://localhost:8081}
+          predicates:
+            - Path=/v1/merchants/**
+        - id: payment-orchestrator-route
+          uri: ${SERVICES_PAYMENT_URL:http://localhost:8082}
+          predicates:
+            - Path=/v1/payments/**
+        - id: invoice-service-route
+          uri: ${SERVICES_INVOICE_URL:http://localhost:8085}
+          predicates:
+            - Path=/v1/invoices/**
+        - id: bank-simulator-route
+          uri: ${SERVICES_BANK_URL:http://localhost:8086}
+          predicates:
+            - Path=/v1/bank/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+  endpoint:
+    health:
+      show-details: always

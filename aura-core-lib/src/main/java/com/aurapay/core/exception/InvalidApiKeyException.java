@@ -1,12 +1,12 @@
 package com.aurapay.core.exception;
 
-public class InvalidApiKeyException extends UnauthorizedException {
+public class InvalidApiKeyException extends BusinessException {
 
     public InvalidApiKeyException() {
-        super("The provided API key is invalid, revoked, or expired");
+        super(AuraErrorCode.INVALID_API_KEY, "The provided API key is invalid, revoked, or expired");
     }
 
     public InvalidApiKeyException(String message) {
-        super(message);
+        super(AuraErrorCode.INVALID_API_KEY, message);
     }
 }
