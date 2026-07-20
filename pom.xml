@@ -22,10 +22,14 @@
     <properties>
         <java.version>21</java.version>
         <spring-cloud.version>2023.0.2</spring-cloud.version>
+        <!-- Fix per vulnerabilità di sicurezza e CVE (Jackson, Spring Security, AssertJ) -->
+        <jackson.version>2.18.2</jackson.version>
+        <spring-security.version>6.4.2</spring-security.version>
+        <assertj.version>3.27.3</assertj.version>
     </properties>
 
     <modules>
-        <!-- I moduli verranno creati e aggiunti nelle rispettive sessioni -->
+        <module>aura-core-lib</module>
     </modules>
 
     <dependencyManagement>
