@@ -1,0 +1,65 @@
+# Target folder (Maven)
+target/
+**/target/
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+**/out/
+
+# Eclipse
+.metadata/
+.classpath
+.project
+.settings/
+*.launch
+.factorypath
+
+# VS Code
+.vscode/
+
+# OS-specific files
+Thumbs.db
+.DS_Store
+
+# Log files
+*.log
+logs/
+**/logs/
+
+# Local environments / secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Docker & Local Data
+docker/data/
+docker/postgres-data/
+docker/minio-data/
+docker/kafka-data/
+docker/redis-data/
+
+# Node/React (Frontend)
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+dist/
+**/dist/
+.eslintcache
+
+# AI Coordination & Local Docs (non caricati su GitHub)
+docs/
+
