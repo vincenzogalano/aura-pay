@@ -1,4 +1,4 @@
-package com.aurapay.banksimulator.dto;
+package com.aurapay.banksimulator.dto.response;
 
 import com.aurapay.core.events.BankResponseCode;
 

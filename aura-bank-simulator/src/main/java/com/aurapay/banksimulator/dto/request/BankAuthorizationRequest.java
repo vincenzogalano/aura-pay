@@ -1,4 +1,4 @@
-package com.aurapay.banksimulator.dto;
+package com.aurapay.banksimulator.dto.request;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -6,9 +6,9 @@ import jakarta.validation.constraints.NotNull;
 
 import java.util.UUID;
 
-public record BankRefundRequest(
-        @NotBlank(message = "originalTransactionId is required")
-        String originalTransactionId,
+public record BankAuthorizationRequest(
+        @NotNull(message = "paymentIntentId is required")
+        UUID paymentIntentId,
 
         @NotNull(message = "merchantId is required")
         UUID merchantId,
@@ -17,5 +17,11 @@ public record BankRefundRequest(
         @Min(value = 1, message = "amountCents must be at least 1")
         Long amountCents,
 
-        String reason
+        @NotBlank(message = "currency is required")
+        String currency,
+
+        @NotBlank(message = "cardToken is required")
+        String cardToken,
+
+        boolean isTest
 ) {}

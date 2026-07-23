@@ -1,0 +1,14 @@
+server:
+  port: 0
+
+spring:
+  application:
+    name: aura-bank-simulator-test
+  kafka:
+    bootstrap-servers: localhost:9092
+    listener:
+      auto-startup: false
+
+aurapay:
+  bank:
+    simulated-latency-ms: 0

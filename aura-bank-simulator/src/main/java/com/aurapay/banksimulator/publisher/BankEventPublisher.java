@@ -2,8 +2,8 @@ package com.aurapay.banksimulator.publisher;
 
 import com.aurapay.core.events.BankAuthorizationResultEvent;
 import com.aurapay.core.events.EventType;
-import com.aurapay.banksimulator.dto.BankAuthorizationRequest;
-import com.aurapay.banksimulator.dto.BankAuthorizationResponse;
+import com.aurapay.banksimulator.dto.request.BankAuthorizationRequest;
+import com.aurapay.banksimulator.dto.response.BankAuthorizationResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.core.KafkaTemplate;

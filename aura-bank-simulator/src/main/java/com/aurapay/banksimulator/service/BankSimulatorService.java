@@ -1,9 +1,9 @@
 package com.aurapay.banksimulator.service;
 
-import com.aurapay.banksimulator.dto.BankAuthorizationRequest;
-import com.aurapay.banksimulator.dto.BankAuthorizationResponse;
-import com.aurapay.banksimulator.dto.BankRefundRequest;
-import com.aurapay.banksimulator.dto.BankRefundResponse;
+import com.aurapay.banksimulator.dto.request.BankAuthorizationRequest;
+import com.aurapay.banksimulator.dto.response.BankAuthorizationResponse;
+import com.aurapay.banksimulator.dto.request.BankRefundRequest;
+import com.aurapay.banksimulator.dto.response.BankRefundResponse;
 import com.aurapay.banksimulator.publisher.BankEventPublisher;
 import com.aurapay.banksimulator.util.LatencyUtils;
 import com.aurapay.core.events.BankResponseCode;
