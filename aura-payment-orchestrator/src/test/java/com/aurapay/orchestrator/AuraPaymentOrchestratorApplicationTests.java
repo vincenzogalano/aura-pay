@@ -1,0 +1,29 @@
+package com.aurapay.orchestrator;
+
+import com.aurapay.orchestrator.client.BankSimulatorClient;
+import com.aurapay.orchestrator.client.VaultClient;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+@SpringBootTest
+@ActiveProfiles("test")
+class AuraPaymentOrchestratorApplicationTests {
+
+    @MockitoBean
+    private VaultClient vaultClient;
+
+    @MockitoBean
+    private BankSimulatorClient bankSimulatorClient;
+
+    @Test
+    @DisplayName("Dovrebbe caricare il contesto applicativo Spring Boot con successo")
+    void contextLoads() {
+        assertNotNull(vaultClient);
+        assertNotNull(bankSimulatorClient);
+    }
+}

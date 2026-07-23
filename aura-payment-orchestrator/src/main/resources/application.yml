@@ -1,0 +1,37 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: aura-payment-orchestrator
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/aura_orchestrator_db}
+    username: ${SPRING_DATASOURCE_USERNAME:aura_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:aura_password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+aurapay:
+  services:
+    vault-url: ${VAULT_SERVICE_URL:http://localhost:8084}
+    bank-simulator-url: ${BANK_SIMULATOR_URL:http://localhost:8086}
