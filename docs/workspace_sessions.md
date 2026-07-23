@@ -32,14 +32,16 @@ Di seguito è riportato l'ordine sequenziale delle sessioni di sviluppo. Ciascun
 *   **Stato:** `Completato [x]`
 *   **Dipendenze:** Sessione 2
 
-### ⚪ Sessione 4: Vault Service (Tokenizzazione Carte)
+### 🟢 Sessione 4: Vault Service (Tokenizzazione Carte)
 *   **Obiettivo:** Sviluppo del servizio PCI-scoped fittizio che riceve i dati della carta e restituisce un token temporaneo, isolando i dati sensibili.
-*   **Stato:** `Non Iniziato [ ]`
+*   **Stato:** `Completato [x]`
+*   **Risultato atteso:** Il servizio è integrato con HashiCorp Vault (Transit Secrets Engine) tramite un client HTTP leggero basato su `RestClient` con auto-bootstrap. La cifratura/decifratura è delegata a Vault e i dati mascherati sono persistiti su PostgreSQL (`aura_vault_db`). I token hanno TTL di 15 minuti e sono single-use.
 *   **Dipendenze:** Sessione 2
 
-### ⚪ Sessione 5: Payment Orchestrator (Happy Path Sincrono)
-*   **Obiettivo:** Creazione della macchina a stati del `PaymentIntent`. Orchestrazione sincrona tra Vault Service e Bank Simulator per la conferma del pagamento.
-*   **Stato:** `Non Iniziato [ ]`
+
+### 🟢 Sessione 5: Payment Orchestrator (Happy Path Sincrono)
+*   **Obiettivo:** Creazione del modulo `aura-payment-orchestrator`. Macchina a stati `PaymentIntent` (`CREATED`, `PROCESSING`, `SUCCEEDED`, `FAILED`, `CANCELLED`, `REFUNDED`, `PARTIALLY_REFUNDED`), orchestrazione sincrona tra `aura-vault-service` (detokenizzazione) e `aura-bank-simulator` (autorizzazione bancaria), REST Controller su `/v1/payments`, gestione errori con `ErrorResponse` e suite di test JUnit 5.
+*   **Stato:** `Completato [x]`
 *   **Dipendenze:** Sessione 3, Sessione 4
 
 ### ⚪ Sessione 6: Debezium & Outbox Pattern (Event-Driven Engine)
