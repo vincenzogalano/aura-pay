@@ -15,6 +15,7 @@ spring:
       idle-timeout: 30000
       connection-timeout: 20000
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: validate
     show-sql: true
@@ -22,6 +23,10 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
   sql:
     init:
       mode: always
