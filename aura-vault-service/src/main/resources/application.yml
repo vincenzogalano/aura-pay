@@ -1,0 +1,37 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: aura-vault-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/aura_vault_db}
+    username: ${SPRING_DATASOURCE_USERNAME:aura_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:aura_password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+
+aurapay:
+  vault:
+    vault-url: ${VAULT_URL:http://localhost:8200}
+    vault-token: ${VAULT_TOKEN:my-root-token}
+    token-ttl-minutes: ${TOKEN_TTL_MINUTES:15}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+  endpoint:
+    health:
+      show-details: always

@@ -1,0 +1,25 @@
+server:
+  port: 0
+
+spring:
+  application:
+    name: aura-vault-service-test
+  datasource:
+    url: jdbc:h2:mem:auravaultdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  sql:
+    init:
+      mode: never
+
+aurapay:
+  vault:
+    vault-url: http://localhost:8200
+    vault-token: test-token
+    token-ttl-minutes: 15
