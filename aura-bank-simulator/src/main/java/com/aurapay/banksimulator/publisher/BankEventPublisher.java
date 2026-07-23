@@ -4,8 +4,7 @@ import com.aurapay.core.events.BankAuthorizationResultEvent;
 import com.aurapay.core.events.EventType;
 import com.aurapay.banksimulator.dto.request.BankAuthorizationRequest;
 import com.aurapay.banksimulator.dto.response.BankAuthorizationResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
@@ -13,9 +12,8 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Component
+@Slf4j
 public class BankEventPublisher {
-
-    private static final Logger log = LoggerFactory.getLogger(BankEventPublisher.class);
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 

@@ -9,17 +9,15 @@ import com.aurapay.banksimulator.util.LatencyUtils;
 import com.aurapay.core.events.BankResponseCode;
 import com.aurapay.core.exception.AuraErrorCode;
 import com.aurapay.core.exception.BusinessException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
 @Service
+@Slf4j
 public class BankSimulatorService {
-
-    private static final Logger log = LoggerFactory.getLogger(BankSimulatorService.class);
 
     private final BankEventPublisher eventPublisher;
     private final long simulatedLatencyMs;
