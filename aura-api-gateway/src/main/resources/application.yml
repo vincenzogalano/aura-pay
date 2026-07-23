@@ -27,6 +27,17 @@ spring:
           uri: ${SERVICES_BANK_URL:http://localhost:8086}
           predicates:
             - Path=/v1/bank/**
+        - id: block-vault-retrieve-route
+          uri: noop://localhost
+          predicates:
+            - Path=/v1/tokens/retrieve
+          filters:
+            - SetStatus=403
+        - id: vault-service-route
+          uri: ${SERVICES_VAULT_URL:http://localhost:8084}
+          predicates:
+            - Path=/v1/tokens/**
+
 
 management:
   endpoints:
