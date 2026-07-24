@@ -50,9 +50,9 @@ Di seguito è riportato l'ordine sequenziale delle sessioni di sviluppo. Ciascun
 *   **Dipendenze:** Sessione 5
 
 
-### ⚪ Sessione 7: Ledger Service (Partita Doppia)
-*   **Obiettivo:** Sviluppo del servizio contabile. Consuma gli eventi di pagamento e rimborso, registrando le righe Dare/Avere in modo immutabile.
-*   **Stato:** `Non Iniziato [ ]`
+### 🟢 Sessione 7: Ledger Service (Partita Doppia)
+*   **Obiettivo:** Sviluppo del servizio contabile `aura-ledger-service` (porta 8085). Registrazione contabile immutabile in Partita Doppia (Dare/Avere bilanciati per pagamenti e rimborsi), calcolo algebrico del saldo merchant per ambiente test/live, consumer Kafka idempotente su consumer group `ledger-service-group` (`aura.payment.succeeded.v1`, `aura.refund.succeeded.v1`), pubblicazione audit `LedgerEntryRecordedEvent`, ed API REST su `/v1/ledger`.
+*   **Stato:** `Completato [x]`
 *   **Dipendenze:** Sessione 6
 
 ### ⚪ Sessione 8: Merchant & Webhook Services

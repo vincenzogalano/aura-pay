@@ -7,10 +7,11 @@ Questo documento funge da **manuale architetturale dinamico** per lo studio e la
 ## Indice dei Moduli
 1. [aura-core-lib (Libreria Condivisa) — Sessione 2](#1-aura-core-lib-libreria-condivisa---sessione-2)
 2. [aura-api-gateway & aura-bank-simulator — Sessione 3](#2-aura-api-gateway--aura-bank-simulator---sessione-3)
-3. [aura-vault-service (Tokenizzazione Carte) — Sessione 4](#3-aura-vault-service-tokenizzazione-carte---sessione-4)
+3. [aura-vault-service (Tokenizzazione Carte) — Sessione 4](#3-aura-vault-service-tokenizzazione-carte---sessione-carte)
 4. [aura-payment-orchestrator (Happy Path Sincrono) — Sessione 5](#4-aura-payment-orchestrator-happy-path-sincrono---sessione-5)
 5. [Debezium & Outbox Pattern (Event-Driven Engine) — Sessione 6](#5-debezium--outbox-pattern-event-driven-engine---sessione-6)
-6. [Convenzioni di Codice & Standard Ecosistema](#6-convenzioni-di-codice--standard-ecosistema)
+6. [aura-ledger-service (Partita Doppia & Ledger Contabile) — Sessione 7](#6-aura-ledger-service-partita-doppia--ledger-contabile---sessione-7)
+7. [Convenzioni di Codice & Standard Ecosistema](#7-convenzioni-di-codice--standard-ecosistema)
 
 ---
 
@@ -698,7 +699,108 @@ docker/
 
 ---
 
-## 6. Convenzioni di Codice & Standard Ecosistema
+## 6. `aura-ledger-service` (Partita Doppia & Ledger Contabile) — Sessione 7
+
+### Scopo del Modulo
+`aura-ledger-service` è il microservizio contabile responsabile della registrazione finanziaria immutabile in **Partita Doppia (Double-Entry Bookkeeping)** e del calcolo algebrico dei saldi merchant:
+
+1. **Contabilità a Partita Doppia (Immutabilità Contabile)**:
+   * Consuma gli eventi di dominio Kafka `PaymentSucceededEvent` ed `RefundSucceededEvent`.
+   * Registra per ciascuna transazione almeno due righe bilanciate in cui la somma dei **DEBIT** equivale alla somma dei **CREDIT** ($\sum \text{DEBIT} = \sum \text{CREDIT}$).
+   * **Pagamenti**: `DEBIT SETTLEMENT_HOLDING` (Importo Lordo) = `CREDIT MERCHANT_AVAILABLE` (Importo Netto) + `CREDIT SYSTEM_REVENUE` (Commissione).
+   * **Rimborsi**: `DEBIT MERCHANT_AVAILABLE` (Importo Rimborso) = `CREDIT SETTLEMENT_HOLDING` (Importo Rimborso).
+
+2. **Calcolo Saldo Algebrico & Isolamento Sandbox**:
+   * Il saldo disponibile del merchant viene sempre calcolato tramite la somma algebrica delle registrazioni contabili (`SUM(CREDIT) - SUM(DEBIT)` sull'account `MERCHANT_AVAILABLE`), garantendo che il saldo non sia mai soggetto ad un UPDATE distruttivo su colonna.
+   * Isolamento rigoroso tramite il flag `is_test` (sandbox vs live).
+
+3. **Consumer Kafka Idempotente & Eventi Audit**:
+   * Sottoscritto ai topic `aura.payment.succeeded.v1` e `aura.refund.succeeded.v1` tramite il consumer group `ledger-service-group`.
+   * Garantisce la semantica *effectively-once* registrando gli `eventId` consumati nella tabella `processed_events`.
+   * Pubblica l'evento audit `LedgerEntryRecordedEvent` sul topic `aura.ledger.entry_recorded.v1`.
+
+---
+
+### Struttura dei Pacchetti e dei File Creati
+
+```
+aura-ledger-service/
+├── pom.xml
+└── src/
+    ├── main/
+    │   ├── java/com/aurapay/ledger/
+    │   │   ├── AuraLedgerApplication.java             # Main class Spring Boot
+    │   │   ├── consumer/
+    │   │   │   └── LedgerKafkaConsumer.java            # Kafka consumer group 'ledger-service-group' con deduplicazione
+    │   │   ├── controller/
+    │   │   │   └── LedgerController.java               # REST Controller su /v1/ledger (balance ed entries)
+    │   │   ├── domain/
+    │   │   │   ├── LedgerEntry.java                    # Entità JPA immutabile per ledger_entries
+    │   │   │   ├── ProcessedEvent.java                 # Entità JPA deduplicazione processed_events
+    │   │   │   └── enums/
+    │   │   │       ├── AccountType.java                # MERCHANT_AVAILABLE, SYSTEM_REVENUE, SETTLEMENT_HOLDING
+    │   │   │       ├── EntryType.java                  # DEBIT, CREDIT
+    │   │   │       └── TransactionType.java            # PAYMENT, REFUND
+    │   │   ├── dto/
+    │   │   │   └── response/
+    │   │   │       ├── LedgerEntryResponse.java        # DTO record risposta giornale di cassa
+    │   │   │       └── MerchantBalanceResponse.java    # DTO record risposta saldo algebrico merchant
+    │   │   ├── exception/
+    │   │   │   └── GlobalExceptionHandler.java        # ControllerAdvice centralizzato -> ErrorResponse DTO
+    │   │   ├── repository/
+    │   │   │   ├── LedgerEntryRepository.java          # JpaRepository con query JPQL per saldo algebrico e ricerca paginata
+    │   │   │   └── ProcessedEventRepository.java       # JpaRepository per deduplicazione eventId
+    │   │   └── service/
+    │   │       ├── LedgerEventPublisher.java           # Publisher Kafka per LedgerEntryRecordedEvent
+    │   │       └── LedgerService.java                  # Business logic della partita doppia e calcolo saldo
+    │   └── resources/
+    │       ├── application.yml                         # Configurazione porta 8085, DB PostgreSQL e Kafka consumer
+    │       └── schema.sql                            # DDL Postgres per tabelle ledger_entries e processed_events
+    └── test/
+        ├── java/com/aurapay/ledger/
+        │   ├── AuraLedgerApplicationTests.java         # Integration test caricamento contesto Spring Boot
+        │   ├── consumer/
+        │   │   └── LedgerKafkaConsumerTest.java        # Unit test idempotenza ed effectively-once semantics
+        │   ├── controller/
+        │   │   └── LedgerControllerTest.java           # WebMvcTest per endpoint REST /v1/ledger
+        │   └── service/
+        │       └── LedgerServiceTest.java              # Unit test bilanciamento Dare/Avere e calcolo algebrico
+        └── resources/
+            └── application-test.yml                     # Configurazione database H2 in-memory per test
+```
+
+---
+
+### Dettaglio delle Classi e delle Scelte di Design
+
+#### 1. `LedgerService.java` & `LedgerEntryRepository.java`
+* **Scrittura Immutabile a Partita Doppia**:
+  * Un pagamento di 100.00€ con commissione di 3.00€ genera 3 righe immutabili:
+    1. `DEBIT SETTLEMENT_HOLDING` per 10000 centesimi (Lordo).
+    2. `CREDIT MERCHANT_AVAILABLE` per 9700 centesimi (Netto).
+    3. `CREDIT SYSTEM_REVENUE` per 300 centesimi (Commissione).
+  * Equazione rispettata: $\text{DEBIT} = 10000$, $\text{CREDIT} = 9700 + 300 = 10000$.
+* **Query Algebrica Saldo (`calculateMerchantBalance`)**:
+  * Utilizza una funzione di aggregazione JPQL con `CASE WHEN`:
+    `SUM(CASE WHEN e.entryType = 'CREDIT' THEN e.amountCents ELSE -e.amountCents END)` per `accountType = 'MERCHANT_AVAILABLE'` e `isTest = :isTest`.
+  * Rende impossibile qualsiasi errore di race-condition o disallineamento derivante da UPDATE distruttivi.
+
+#### 2. `LedgerKafkaConsumer.java` & `ProcessedEventRepository.java`
+* **Semantica Effectively-Once**:
+  * Prima di elaborare l'evento, il consumer interroga `processedEventRepository.existsById(eventId)`. Se l'evento è già presente, registra un warning e salta l'elaborazione.
+  * In caso contrario, registra l'evento in `processed_events` e completa la scrittura contabile all'interno della stessa transazione (`@Transactional`).
+
+---
+
+### Spunti di Discussione per Colloqui / Technical Reviews
+* **Q: Perché calcolate il saldo merchant algebricamente invece di aggiornare una colonna `balance` nel DB?**
+  * *A*: Nei sistemi di pagamento reali (Stripe, Adyen), il saldo non è una variabile di stato mutabile su cui si eseguono `UPDATE balance = balance + X`, ma il risultato della storia delle registrazioni contabili. L'approccio append-only elimina i problemi di race condition nelle transazioni concorrenti e garantisce l'audit storiografico completo per adempimenti contabili e fiscali.
+* **Q: Come garantite l'idempotenza nel consumo degli eventi Kafka?**
+  * *A*: Ogni evento trasporta un `eventId` univoco. Il consumer verifica e salva atomicamente questo identificativo nella tabella `processed_events` prima di registrare le righe contabili, garantendo che tentativi di re-invio dell'evento non provochino registrazioni contabili duplicate.
+
+---
+
+## 7. Convenzioni di Codice & Standard Ecosistema
 
 
 Tutti i microservizi dell'ecosistema AuraPay condividono una serie di convenzioni rigide ed immutabili garantite da audit automatici e test di regressione:
@@ -721,9 +823,10 @@ Tutti i microservizi dell'ecosistema AuraPay condividono una serie di convenzion
 
 ### 5. Configurazione Database & Spring Boot
 - **DDL & Schema**: Inizializzazione schema via `schema.sql` autoritativo e Hibernate DDL auto in modalità `validate`.
-- **Performance & Safety**: Disattivazione anti-pattern Open Session In View (`spring.jpa.open-in-view: false`) e limiti definiti per il pool HikariCP (`maximum-pool-size: 10`).
+- **Performance & Safety**: Disattivazione anti-pattern Open Session In View (`spring.jpa.open-in-view: false`) e limits definiti per il pool HikariCP (`maximum-pool-size: 10`).
 
 ### 6. Containerizzazione & Isolamento Test
 - **Docker**: `Dockerfile` multi-stage basato su `eclipse-temurin:21-jre-alpine` per tutti i microservizi.
 - **Test Suite**: Annotazione `@ActiveProfiles("test")` e `@TestPropertySource` su tutti i test per isolare il database H2 dalle variabili d'ambiente OS (`SPRING_DATASOURCE_URL`).
+
 

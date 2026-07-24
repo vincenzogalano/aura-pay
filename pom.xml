@@ -42,6 +42,7 @@
         <module>aura-bank-simulator</module>
         <module>aura-vault-service</module>
         <module>aura-payment-orchestrator</module>
+        <module>aura-ledger-service</module>
     </modules>
 
     <dependencyManagement>
@@ -111,6 +112,11 @@
             <dependency>
                 <groupId>com.aurapay</groupId>
                 <artifactId>aura-payment-orchestrator</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aurapay</groupId>
+                <artifactId>aura-ledger-service</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>
