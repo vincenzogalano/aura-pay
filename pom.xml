@@ -45,6 +45,7 @@
         <module>aura-ledger-service</module>
         <module>aura-merchant-service</module>
         <module>aura-webhook-service</module>
+        <module>aura-invoice-service</module>
     </modules>
 
     <dependencyManagement>
@@ -129,6 +130,11 @@
             <dependency>
                 <groupId>com.aurapay</groupId>
                 <artifactId>aura-webhook-service</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aurapay</groupId>
+                <artifactId>aura-invoice-service</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

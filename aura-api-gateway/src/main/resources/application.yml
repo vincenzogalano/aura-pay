@@ -24,7 +24,7 @@ spring:
           predicates:
             - Path=/v1/payments/**
         - id: invoice-service-route
-          uri: ${SERVICES_INVOICE_URL:http://localhost:8085}
+          uri: ${SERVICES_INVOICE_URL:http://localhost:8088}
           predicates:
             - Path=/v1/invoices/**
         - id: bank-simulator-route

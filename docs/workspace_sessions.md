@@ -60,9 +60,9 @@ Di seguito è riportato l'ordine sequenziale delle sessioni di sviluppo. Ciascun
 *   **Stato:** `Completato [x]`
 *   **Dipendenze:** Sessione 6
 
-### ⚪ Sessione 9: Invoice Service (Fatturazione PDF & MinIO S3)
-*   **Obiettivo:** Sviluppo del servizio di fatturazione. Genera i PDF delle fatture/note di credito e li carica su MinIO, esponendo URL firmati a tempo.
-*   **Stato:** `Non Iniziato [ ]`
+### 🟢 Sessione 9: Invoice Service (Fatturazione PDF & MinIO S3)
+*   **Obiettivo:** Sviluppo del servizio di fatturazione `aura-invoice-service` (porta 8088). Generazione automatica PDF via Apache PDFBox 3.x (fatture `INV-YYYY-XXXXXX` e note di credito `CN-YYYY-XXXXXX`, watermark "TEST" in sandbox), storage S3 su MinIO, salvataggio metadati su PostgreSQL (`aura_invoice_db`), presigned URL a tempo (15 min) via HMAC-SHA256 e consumer Kafka (`invoice-service-group`) per gli eventi `payment.succeeded` e `refund.succeeded`.
+*   **Stato:** `Completato [x]`
 *   **Dipendenze:** Sessione 6
 
 ### ⚪ Sessione 10: E2E Integration Testing & Polish Backend

@@ -831,7 +831,87 @@ aura-ledger-service/
 
 ---
 
-## 8. Convenzioni di Codice & Standard Ecosistema
+## 8. `aura-invoice-service` (Fatturazione PDF & MinIO S3) — Sessione 9
+
+### Scopo del Modulo
+`aura-invoice-service` (porta **8088**) è il microservizio dedicato alla fatturazione e alla gestione dei documenti fiscali PDF. Esso fornisce:
+1. **Generazione PDF Automatica**: Generazione lato server tramite **Apache PDFBox 3.x** di fatture (`INV-YYYY-XXXXXX`) e note di credito (`CN-YYYY-XXXXXX`) con numerazione progressiva univoca per merchant/anno e watermark **"TEST - NON FISCALMENTE VALIDO"** per le transazioni in ambiente Sandbox (`isTest = true`).
+2. **Storage Documenti S3 su MinIO**: Upload degli array di byte PDF su bucket dedicato S3 locale (`aurapay-invoices`) con auto-bootstrap del bucket all'avvio.
+3. **Persistenza Metadati su PostgreSQL**: Tracciamento stato fatture (`GENERATED`, `FAILED`), importo, valuta e chiavi oggetto S3 nel database `aura_invoice_db`.
+4. **Presigned URL a Tempo**: Generazione ed elaborazione di link di download temporanei (validità 15 minuti) protetti da firma **HMAC-SHA256** generata tramite `HmacUtils` di `aura-core-lib`.
+5. **Consumer Kafka Idempotente**: Reattività agli eventi `aura.payment.succeeded.v1` e `aura.refund.succeeded.v1` su consumer group `invoice-service-group` e pubblicazione di `aura.invoice.generated.v1` o `aura.invoice.generation_failed.v1`.
+
+---
+
+### Struttura dei Pacchetti e dei File
+
+```
+aura-invoice-service/
+├── Dockerfile
+├── pom.xml
+└── src/
+    ├── main/
+    │   ├── java/com/aurapay/invoice/
+    │   │   ├── AuraInvoiceApplication.java               # Main application class
+    │   │   ├── config/
+    │   │   │   └── MinioConfig.java                      # Configurazione MinioClient e auto-bootstrap bucket
+    │   │   ├── controller/
+    │   │   │   └── InvoiceController.java                # Controller REST su /v1/invoices
+    │   │   ├── domain/
+    │   │   │   ├── Invoice.java                          # Entita' JPA per fatture e note di credito
+    │   │   │   └── enums/
+    │   │   │       ├── InvoiceStatus.java                # Enum degli stati (GENERATED, FAILED)
+    │   │   │       └── InvoiceType.java                  # Enum dei tipi (INVOICE, CREDIT_NOTE)
+    │   │   ├── dto/
+    │   │   │   └── response/
+    │   │   │       ├── InvoiceDownloadUrlResponse.java   # Record risposta presigned URL
+    │   │   │       └── InvoiceResponse.java              # Record metadati fattura
+    │   │   ├── exception/
+    │   │   │   └── GlobalExceptionHandler.java          # Handler eccezioni centralizzato -> ErrorResponse
+    │   │   ├── listener/
+    │   │   │   └── InvoiceEventListener.java             # Listener Kafka per payment.succeeded e refund.succeeded
+    │   │   ├── publisher/
+    │   │   │   └── InvoiceEventPublisher.java            # Publisher Kafka per invoice.generated e generation_failed
+    │   │   ├── repository/
+    │   │   │   └── InvoiceRepository.java                # Spring Data JPA Repository per Invoice
+    │   │   └── service/
+    │   │       ├── InvoicePdfGenerator.java              # Generatore PDF Apache PDFBox 3.x con watermark
+    │   │       ├── InvoiceService.java                   # Core Business Logic e gestione Presigned URL
+    │   │       └── MinioStorageService.java              # Servizio I/O per storage S3 su MinIO
+    │   └── resources/
+    │       └── application.yml                          # Configurazione porta 8088, DB, Kafka e MinIO
+    └── test/
+        ├── java/com/aurapay/invoice/
+        │   ├── AuraInvoiceApplicationTests.java         # Integration test avvio contesto Spring Boot
+        │   ├── controller/
+        │   │   └── InvoiceControllerTest.java            # WebMvcTest per risposte REST ed HTTP streaming
+        │   └── service/
+        │       ├── InvoicePdfGeneratorTest.java          # Unit test PDFBox text stripper e watermark
+        │       └── InvoiceServiceTest.java               # Unit test business logic, MinIO e presigned URL
+        └── resources/
+            └── application-test.yml                     # Profilo di test H2 e Mock Kafka
+```
+
+---
+
+### Dettaglio delle Classi e delle Scelte di Design
+
+#### 1. `InvoicePdfGenerator.java`
+* **Apache PDFBox 3.x Engine**: Costruisce la struttura grafica del PDF (intestazione, tabella importi, data emissione, riferimenti PaymentIntent/Refund e footer).
+* **Gestione Watermark Sandbox**: Se `isTest == true`, applica un watermark diagonale rosso semi-trasparente `"TEST - NON FISCALMENTE VALIDO"` ruotato con matrice di trasformazione `Matrix.getRotateInstance()`, isolando il contesto di grafica con `saveGraphicsState()` e `restoreGraphicsState()`.
+* **Formattazione Valuta Deterministica**: Utilizza `Locale.US` per formattare gli importi con punto decimale (es. `125.00 EUR`).
+
+#### 2. `InvoiceService.java` & `MinioStorageService.java`
+* **Numerazione Progressiva**: Calcola il progressivo univoco annuo per merchant via `countByMerchantIdAndInvoiceTypeAndYear`.
+* **Protezione Presigned URL**: I link di download generati da `generatePresignedDownloadUrl` scadono dopo 15 minuti. La firma HMAC-SHA256 garantisce che l'URL non possa essere manomesso per scaricare fatture di altri merchant o estendere la validità temporale.
+* **Sicurezza Anti-Timing Attack**: La validazione della firma utilizza `HmacUtils.verifyHmacSha256` a tempo costante.
+
+#### 3. `InvoiceEventListener.java` & `InvoiceEventPublisher.java`
+* **Idempotenza Event-Driven**: Prima della generazione PDF, il servizio verifica l'esistenza di documenti già emessi per lo stesso `paymentIntentId` o `refundId`, prevenendo duplicati in caso di re-invio dell'evento Kafka.
+
+---
+
+## 9. Convenzioni di Codice & Standard Ecosistema
 
 
 Tutti i microservizi dell'ecosistema AuraPay condividono una serie di convenzioni rigide ed immutabili garantite da audit automatici e test di regressione:

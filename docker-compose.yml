@@ -190,6 +190,32 @@ services:
       vault:
         condition: service_started
 
+  # --- INVOICE SERVICE (Session 9) ---
+  invoice-service:
+    build:
+      context: .
+      dockerfile: aura-invoice-service/Dockerfile
+    container_name: aurapay-invoice-service
+    ports:
+      - "8088:8088"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aura_invoice_db
+      SPRING_DATASOURCE_USERNAME: aura_user
+      SPRING_DATASOURCE_PASSWORD: aura_password
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: minio_admin
+      MINIO_SECRET_KEY: minio_password
+      MINIO_BUCKET: aurapay-invoices
+      PRESIGNED_URL_SECRET: aura-presigned-url-secret-key-2026
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
 
 volumes:
   pgdata:

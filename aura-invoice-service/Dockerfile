@@ -1,0 +1,10 @@
+FROM eclipse-temurin:21-jdk-alpine AS builder
+WORKDIR /app
+COPY . .
+RUN ./mvnw clean package -DskipTests -pl aura-invoice-service -am || true
+
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+COPY --from=builder /app/aura-invoice-service/target/*.jar app.jar
+EXPOSE 8088
+ENTRYPOINT ["java", "-jar", "app.jar"]
