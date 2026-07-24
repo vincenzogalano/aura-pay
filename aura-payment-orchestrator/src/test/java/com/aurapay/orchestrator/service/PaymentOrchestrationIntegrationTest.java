@@ -30,7 +30,9 @@ import static org.mockito.BDDMockito.given;
 @SpringBootTest
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
-        "SPRING_DATASOURCE_URL=jdbc:h2:mem:orchestratordb_it;DB_CLOSE_DELAY=-1;MODE=PostgreSQL"
+        "spring.datasource.url=jdbc:h2:mem:orchestratordb_it;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL",
+        "spring.datasource.driver-class-name=org.h2.Driver",
+        "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect"
 })
 class PaymentOrchestrationIntegrationTest {
 
