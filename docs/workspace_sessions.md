@@ -55,9 +55,9 @@ Di seguito è riportato l'ordine sequenziale delle sessioni di sviluppo. Ciascun
 *   **Stato:** `Completato [x]`
 *   **Dipendenze:** Sessione 6
 
-### ⚪ Sessione 8: Merchant & Webhook Services
-*   **Obiettivo:** Gestione dei merchant, chiavi API (test/live), flusso di onboarding e sistema asincrono di notifica webhook via HMAC con retry esponenziale.
-*   **Stato:** `Non Iniziato [ ]`
+### 🟢 Sessione 8: Merchant & Webhook Services (Questa sessione)
+*   **Obiettivo:** Gestione dei merchant, chiavi API (test/live), flusso di onboarding KYB simulato, persistenza hash BCrypt su PostgreSQL (`aura_merchant_db` e `aura_webhook_db`), pubblicazione eventi Kafka e sistema asincrono di notifica webhook via HMAC-SHA256 con retry ad espansione esponenziale e Dead Letter.
+*   **Stato:** `Completato [x]`
 *   **Dipendenze:** Sessione 6
 
 ### ⚪ Sessione 9: Invoice Service (Fatturazione PDF & MinIO S3)

@@ -800,7 +800,38 @@ aura-ledger-service/
 
 ---
 
-## 7. Convenzioni di Codice & Standard Ecosistema
+---
+
+## 7. `aura-merchant-service` & `aura-webhook-service` — Sessione 8
+
+### Scopo dei Moduli
+1. **`aura-merchant-service` (Porta 8081)**:
+   * **Merchant Lifecycle & Onboarding**: Registrazione self-service (`POST /v1/merchants/register`), gestione stato merchant (`PENDING_VERIFICATION`, `VERIFIED`, `VERIFICATION_REJECTED`, `SUSPENDED`).
+   * **API Key Management**: Generazione ed hashing BCrypt delle chiavi API di ambiente TEST (`pk_test_...`, `sk_test_...`) e LIVE (`pk_live_...`, `sk_live_...`).
+   * **KYB Verification Engine**: Valutazione automatica e deterministica delle richieste di verifica per sbloccare l'ambiente LIVE.
+   * **Kafka Event Publishing**: Pubblicazione degli eventi di ciclo di vita merchant su Kafka (`aura.merchant.created.v1`, `aura.merchant.verified.v1`, `aura.merchant.verification_rejected.v1`, `aura.apikey.created.v1`, `aura.apikey.revoked.v1`).
+
+2. **`aura-webhook-service` (Porta 8087)**:
+   * **Public Event Consumer**: Consumer Kafka sottoscritto al consumer group `webhook-service-group` per tutti gli eventi pubblici destinati ai merchant (`payment.succeeded`, `refund.succeeded`, `merchant.verified`, `merchant.verification_rejected`, `invoice.generated`, `payment.failed`, `refund.failed`).
+   * **HMAC-SHA256 Delivery Engine**: Invio notifiche HTTP POST asincrone con firma `X-Aura-Signature` calcolata tramite `HmacUtils.calculateHmacSha256(payload, secretKey)`.
+   * **Exponential Backoff & Dead Letter**: Retry automatico schedulato (`WebhookRetryScheduler`) ad espansione esponenziale fino a 5 tentativi prima di spostare la consegna in `DEAD_LETTER` e pubblicare `WebhookDeliveryDeadLetteredEvent`.
+   * **Replay Engine**: API REST per l'innesco manuale di tentativi di consegna o replay per intervallo temporale (`/v1/webhooks/deliveries/{id}/replay`, `/v1/webhooks/replay`).
+
+---
+
+### Dettaglio delle Classi e delle Scelte di Design
+
+#### 1. `MerchantService.java` & `ApiKeyGenerator.java`
+* **Onboarding Immediato Sandbox**: La registrazione genera e restituisce in chiaro le sole chiavi TEST al momento della creazione. Nel database viene conservato unicamente l'hash BCrypt (`key_hash`).
+* **Isolamento Ambiente LIVE**: Le chiavi LIVE possono essere generate solo dopo che la verifica KYB ha portato lo stato del merchant a `VERIFIED`.
+
+#### 2. `WebhookDispatcherService.java` & `MerchantEventsConsumer.java`
+* **Sicurezza Anti-Manomissione (HMAC-SHA256)**: Ogni webhook inoltrato al merchant contiene negli header HTTP la firma HMAC `X-Aura-Signature` e il timestamp `X-Aura-Timestamp`, consentendo al merchant di verificare l'autenticità e prevenire attacchi di replay.
+* **Resilienza & Tracciamento**: Tutte le consegne vengono tracciate nella tabella `webhook_deliveries` con codice di stato HTTP di risposta e corpo errore. In caso di errore temporaneo, il scheduler calcola il tempo di retry successivo con la formula $T_{retry} = \text{initialBackoff} \times (\text{multiplier}^{\text{attempt}-1})$.
+
+---
+
+## 8. Convenzioni di Codice & Standard Ecosistema
 
 
 Tutti i microservizi dell'ecosistema AuraPay condividono una serie di convenzioni rigide ed immutabili garantite da audit automatici e test di regressione:

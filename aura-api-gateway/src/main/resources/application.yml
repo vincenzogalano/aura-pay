@@ -15,6 +15,10 @@ spring:
           uri: ${SERVICES_MERCHANT_URL:http://localhost:8081}
           predicates:
             - Path=/v1/merchants/**
+        - id: webhook-service-route
+          uri: ${SERVICES_WEBHOOK_URL:http://localhost:8087}
+          predicates:
+            - Path=/v1/webhooks/**
         - id: payment-orchestrator-route
           uri: ${SERVICES_PAYMENT_URL:http://localhost:8082}
           predicates:

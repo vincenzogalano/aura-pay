@@ -1,0 +1,30 @@
+CREATE TABLE IF NOT EXISTS merchants (
+    id UUID PRIMARY KEY,
+    business_name VARCHAR(255) NOT NULL,
+    vat_number VARCHAR(20) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    status VARCHAR(30) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS api_keys (
+    id UUID PRIMARY KEY,
+    merchant_id UUID NOT NULL REFERENCES merchants(id) ON DELETE CASCADE,
+    key_prefix VARCHAR(20) NOT NULL,
+    key_hash VARCHAR(255) NOT NULL,
+    environment VARCHAR(20) NOT NULL,
+    key_type VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    revoked_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE TABLE IF NOT EXISTS merchant_webhook_configs (
+    id UUID PRIMARY KEY,
+    merchant_id UUID NOT NULL UNIQUE REFERENCES merchants(id) ON DELETE CASCADE,
+    target_url VARCHAR(512) NOT NULL,
+    secret_key VARCHAR(255) NOT NULL,
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+);

@@ -43,6 +43,8 @@
         <module>aura-vault-service</module>
         <module>aura-payment-orchestrator</module>
         <module>aura-ledger-service</module>
+        <module>aura-merchant-service</module>
+        <module>aura-webhook-service</module>
     </modules>
 
     <dependencyManagement>
@@ -117,6 +119,16 @@
             <dependency>
                 <groupId>com.aurapay</groupId>
                 <artifactId>aura-ledger-service</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aurapay</groupId>
+                <artifactId>aura-merchant-service</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aurapay</groupId>
+                <artifactId>aura-webhook-service</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

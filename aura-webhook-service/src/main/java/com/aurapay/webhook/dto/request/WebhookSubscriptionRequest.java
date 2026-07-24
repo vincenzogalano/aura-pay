@@ -1,0 +1,31 @@
+package com.aurapay.webhook.dto.request;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.UUID;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class WebhookSubscriptionRequest {
+
+    @NotNull(message = "Merchant ID is required")
+    private UUID merchantId;
+
+    @NotBlank(message = "Target URL is required")
+    @Pattern(regexp = "^https?://.*", message = "Target URL must start with http:// or https://")
+    private String targetUrl;
+
+    private String secretKey;
+
+    private Boolean enabled;
+
+    private String subscribedEvents;
+}
