@@ -44,10 +44,11 @@ Di seguito è riportato l'ordine sequenziale delle sessioni di sviluppo. Ciascun
 *   **Stato:** `Completato [x]`
 *   **Dipendenze:** Sessione 3, Sessione 4
 
-### ⚪ Sessione 6: Debezium & Outbox Pattern (Event-Driven Engine)
-*   **Obiettivo:** Integrazione del Transactional Outbox Pattern in `Aura-Payment-Orchestrator`. Configurazione di Debezium e Kafka Connect per inoltrare gli eventi outbox sui topic Kafka in modo affidabile.
-*   **Stato:** `Non Iniziato [ ]`
+### 🟢 Sessione 6: Debezium & Outbox Pattern (Event-Driven Engine)
+*   **Obiettivo:** Integrazione del Transactional Outbox Pattern in `Aura-Payment-Orchestrator`. Creazione tabella `outbox_events`, entità JPA `OutboxEvent`, repository e `PaymentEventFactory` per serializzazione DTO eventi da `aura-core-lib`. Configurazione di Debezium CDC (`docker/debezium/outbox-connector.json`) per il routing degli eventi outbox sui topic Kafka.
+*   **Stato:** `Completato [x]`
 *   **Dipendenze:** Sessione 5
+
 
 ### ⚪ Sessione 7: Ledger Service (Partita Doppia)
 *   **Obiettivo:** Sviluppo del servizio contabile. Consuma gli eventi di pagamento e rimborso, registrando le righe Dare/Avere in modo immutabile.

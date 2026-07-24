@@ -9,6 +9,8 @@ Questo documento funge da **manuale architetturale dinamico** per lo studio e la
 2. [aura-api-gateway & aura-bank-simulator — Sessione 3](#2-aura-api-gateway--aura-bank-simulator---sessione-3)
 3. [aura-vault-service (Tokenizzazione Carte) — Sessione 4](#3-aura-vault-service-tokenizzazione-carte---sessione-4)
 4. [aura-payment-orchestrator (Happy Path Sincrono) — Sessione 5](#4-aura-payment-orchestrator-happy-path-sincrono---sessione-5)
+5. [Debezium & Outbox Pattern (Event-Driven Engine) — Sessione 6](#5-debezium--outbox-pattern-event-driven-engine---sessione-6)
+6. [Convenzioni di Codice & Standard Ecosistema](#6-convenzioni-di-codice--standard-ecosistema)
 
 ---
 
@@ -622,3 +624,106 @@ aura-payment-orchestrator/
   * *A*: La macchina a stati valida preventivamente lo stato corrente prima di procedere con l'orchestrazione. Se una richiesta di conferma viene inviata su un `PaymentIntent` non in stato `CREATED` (es. già `SUCCEEDED` o `FAILED`), l'orchestratore blocca la richiesta sollevando una `DomainRuleViolationException` (HTTP 422 Unprocessable Entity).
 * **Q: Come si integrano gli altri microservizi durante l'orchestrazione del pagamento?**
   * *A*: L'orchestrator usa `RestClient` di Spring Boot 3.4 per effettuare chiamate HTTP sincrone verso Vault (porta 8084) per recuperare i dati della carta in modo sicuro e verso Bank Simulator (porta 8086) per l'autorizzazione.
+
+## 5. Debezium & Outbox Pattern (Event-Driven Engine) — Sessione 6
+
+### Scopo del Modulo
+In questa sessione è stato integrato il **Transactional Outbox Pattern** nel microservizio `aura-payment-orchestrator` unitamente alla configurazione di **Debezium CDC (Change Data Capture)**:
+
+1. **Transactional Outbox Pattern**:
+   * Risolve il problema del dual-write (doppia scrittura su DB e Kafka) garantendo l'atomicità ACID: ogni cambio di stato di un `PaymentIntent` (`CREATED`, `PROCESSING`, `SUCCEEDED`, `FAILED`, `CANCELLED`) salva nella stessa transazione DB (`@Transactional`) l'entità di dominio ed il record nella tabella `outbox_events`.
+   * Il payload dell'evento outbox viene serializzato in formato JSON a partire dai Java Records strongly typed definiti in `aura-core-lib` (`PaymentIntentCreatedEvent`, `PaymentProcessingEvent`, `PaymentSucceededEvent`, `PaymentFailedEvent`).
+
+2. **Debezium & Kafka Connect Setup**:
+   * Configurazione JSON (`docker/debezium/outbox-connector.json`) per Debezium Connect in esecuzione su PostgreSQL.
+   * Utilizza il Single Message Transformation (SMT) `io.debezium.transforms.outbox.EventRouter` per leggere i log di transazione WAL della tabella `outbox_events` e pubblicare in modo asincrono ed affidabile sugli specifici topic Kafka (`aura.paymentintent.created.v1`, `aura.payment.processing.v1`, `aura.payment.succeeded.v1`, `aura.payment.failed.v1`).
+
+---
+
+### Struttura dei Pacchetti e dei File Creati / Modificati
+
+```
+aura-payment-orchestrator/
+├── src/
+│   ├── main/
+│   │   ├── java/com/aurapay/orchestrator/
+│   │   │   ├── domain/
+│   │   │   │   └── OutboxEvent.java                   # Entità JPA per la tabella outbox_events
+│   │   │   ├── repository/
+│   │   │   │   └── OutboxEventRepository.java         # JpaRepository per la tabella outbox_events
+│   │   │   └── service/
+│   │   │       ├── PaymentEventFactory.java           # Factory per la creazione e serializzazione JSON dei DTO eventi di aura-core-lib
+│   │   │       └── PaymentOrchestrationService.java   # Business logic aggiornata con salvataggio atomico outbox
+│   │   └── resources/
+│   │       └── schema.sql                             # DDL Postgres con definizione tabella outbox_events
+│   └── test/
+│       └── java/com/aurapay/orchestrator/
+│           └── service/
+│               ├── PaymentOrchestrationServiceTest.java      # Unit test con mock di OutboxEventRepository e PaymentEventFactory
+│               └── PaymentOrchestrationIntegrationTest.java # Integration test con H2 per verifica persistenza atomica outbox
+docker/
+└── debezium/
+    └── outbox-connector.json                          # Configurazione Debezium Connect Outbox EventRouter SMT
+```
+
+---
+
+### Dettaglio delle Classi e delle Scelte di Design
+
+#### 1. `OutboxEvent.java` & `schema.sql`
+* **Tabella `outbox_events`**:
+  * `id`: UUID Primary Key
+  * `aggregate_type`: `"PaymentIntent"`
+  * `aggregate_id`: UUID del `PaymentIntent` (usato come partition key da Kafka per preservare l'ordinamento degli eventi del medesimo intent)
+  * `event_type`: Nome del topic Kafka (es. `"aura.payment.succeeded.v1"`)
+  * `payload`: Stringa JSON con il contenuto immutabile dell'evento da `aura-core-lib`
+  * `created_at`: Timestamptz di creazione
+  * `processed`: Boolean (default `false`) per tracciamento stato CDC
+
+#### 2. `PaymentEventFactory.java`
+* Componente Spring dedicato alla creazione degli eventi fortemente tipizzati di `aura-core-lib`:
+  * Converte le entità di dominio `PaymentIntent` nei record immutable `DomainEvent` (`PaymentIntentCreatedEvent`, `PaymentProcessingEvent`, `PaymentSucceededEvent`, `PaymentFailedEvent`).
+  * Converte il record event in JSON tramite `ObjectMapper` e costruisce l'entità `OutboxEvent`.
+
+#### 3. `PaymentOrchestrationService.java`
+* Garantisce che in qualsiasi transazione di business (`createPaymentIntent`, `confirmPayment`, `cancelPayment`) il salvataggio dell'entità `PaymentIntent` e la registrazione di `OutboxEvent` avvengano all'interno del medesimo contesto transazionale (`@Transactional`). Se la transazione DB fallisce o fa rollback, l'evento non viene mai scritto nella tabella outbox e di conseguenza mai pubblicato su Kafka.
+
+---
+
+### Spunti di Discussione per Colloqui / Technical Reviews
+* **Q: Cos'è il Transactional Outbox Pattern e quale problema risolve?**
+  * *A*: In un'architettura microservizi, aggiornare il database locale ed inviare direttamente un messaggio a un broker (es. Kafka) all'interno dello stesso metodo presenta il problema del dual-write. Se il DB salva ma la rete verso Kafka fallisce (o viceversa), si generano inconsistenze. Con il Transactional Outbox Pattern, l'evento viene salvato come record in una tabella `outbox_events` nello stesso database ed all'interno della medesima transazione ACID del dato di dominio. Un processo asincrono (Debezium via Change Data Capture) legge i WAL del database e pubblica l'evento su Kafka senza perdite né duplicazioni applicative.
+* **Q: Come funziona il Debezium Outbox Event Router?**
+  * *A*: È una trasformazione (SMT - Single Message Transformation) fornita da Debezium che estrae i campi dalla tabella `outbox_events` (id, aggregate_type, aggregate_id, event_type, payload) e li mappa direttamente sui messaggi Kafka, inviandoli al topic specificato in `event_type` ed usando `aggregate_id` come chiave di partizione.
+
+---
+
+## 6. Convenzioni di Codice & Standard Ecosistema
+
+
+Tutti i microservizi dell'ecosistema AuraPay condividono una serie di convenzioni rigide ed immutabili garantite da audit automatici e test di regressione:
+
+### 1. Nomenclatura e Pacchetti
+- **DTO Immutabili**: Collocati in `dto.request` e `dto.response` (utilizzando Java 21 Records).
+- **Entità JPA**: Segregate in `domain/`.
+- **Controller & Service**: Classi con suffissi espliciti `Controller` e `Service`.
+
+### 2. Header HTTP Centralizzati & Correlation ID
+- **Header Constants**: Definiti unicamente in `AuraHeaders` (`AUTHORIZATION`, `CORRELATION_ID`, `API_KEY`).
+- **Tracciamento Distribuito**: Generazione del Correlation ID sul Gateway (`CorrelationIdFilter`) ed inoltro downstream nei client HTTP via `CorrelationIdInterceptor`.
+
+### 3. Gestione Errori Centralizzata
+- Ogni microservizio espone un `@RestControllerAdvice` (`GlobalExceptionHandler`) che traduce le eccezioni di dominio e di validazione (`@Valid`) nel DTO standard `ErrorResponse` della `aura-core-lib`.
+
+### 4. Logging & Lingua
+- Uso esclusivo dell'annotazione Lombok **`@Slf4j`** per l'istanziazione dei logger.
+- Messaggi di log ed eccezioni scritti unicamente in **Inglese**.
+
+### 5. Configurazione Database & Spring Boot
+- **DDL & Schema**: Inizializzazione schema via `schema.sql` autoritativo e Hibernate DDL auto in modalità `validate`.
+- **Performance & Safety**: Disattivazione anti-pattern Open Session In View (`spring.jpa.open-in-view: false`) e limiti definiti per il pool HikariCP (`maximum-pool-size: 10`).
+
+### 6. Containerizzazione & Isolamento Test
+- **Docker**: `Dockerfile` multi-stage basato su `eclipse-temurin:21-jre-alpine` per tutti i microservizi.
+- **Test Suite**: Annotazione `@ActiveProfiles("test")` e `@TestPropertySource` su tutti i test per isolare il database H2 dalle variabili d'ambiente OS (`SPRING_DATASOURCE_URL`).
+

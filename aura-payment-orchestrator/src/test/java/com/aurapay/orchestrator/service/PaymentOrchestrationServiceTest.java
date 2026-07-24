@@ -1,17 +1,19 @@
 package com.aurapay.orchestrator.service;
 
+import com.aurapay.core.enums.PaymentFailureCode;
 import com.aurapay.core.exception.DomainRuleViolationException;
-import com.aurapay.core.exception.ResourceNotFoundException;
 import com.aurapay.orchestrator.client.BankSimulatorClient;
 import com.aurapay.orchestrator.client.VaultClient;
 import com.aurapay.orchestrator.client.dto.BankAuthorizationRequest;
 import com.aurapay.orchestrator.client.dto.BankAuthorizationResponse;
 import com.aurapay.orchestrator.client.dto.VaultCardDetailsResponse;
+import com.aurapay.orchestrator.domain.OutboxEvent;
 import com.aurapay.orchestrator.domain.PaymentIntent;
 import com.aurapay.orchestrator.domain.enums.PaymentStatus;
 import com.aurapay.orchestrator.dto.request.ConfirmPaymentIntentRequest;
 import com.aurapay.orchestrator.dto.request.CreatePaymentIntentRequest;
 import com.aurapay.orchestrator.dto.response.PaymentIntentResponse;
+import com.aurapay.orchestrator.repository.OutboxEventRepository;
 import com.aurapay.orchestrator.repository.PaymentIntentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -27,7 +29,9 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,6 +39,12 @@ class PaymentOrchestrationServiceTest {
 
     @Mock
     private PaymentIntentRepository paymentIntentRepository;
+
+    @Mock
+    private OutboxEventRepository outboxEventRepository;
+
+    @Mock
+    private PaymentEventFactory paymentEventFactory;
 
     @Mock
     private VaultClient vaultClient;
@@ -53,11 +63,11 @@ class PaymentOrchestrationServiceTest {
     void setUp() {
         merchantId = UUID.randomUUID();
         intentId = UUID.randomUUID();
-        validLuhnToken = "tok_4111111111111111"; // Valid Luhn card token
+        validLuhnToken = "tok_4111111111111111";
     }
 
     @Test
-    @DisplayName("createPaymentIntent - Dovrebbe creare un PaymentIntent in stato CREATED")
+    @DisplayName("createPaymentIntent - Dovrebbe salvare PaymentIntent ed OutboxEvent in stato CREATED")
     void createPaymentIntent_Success() {
         CreatePaymentIntentRequest request = new CreatePaymentIntentRequest(merchantId, 10000L, "EUR", "E-commerce purchase", true);
 
@@ -69,6 +79,8 @@ class PaymentOrchestrationServiceTest {
             return arg;
         });
 
+        given(paymentEventFactory.buildCreatedOutboxEvent(any())).willReturn(new OutboxEvent());
+
         PaymentIntentResponse response = paymentOrchestrationService.createPaymentIntent(request);
 
         assertNotNull(response);
@@ -77,10 +89,12 @@ class PaymentOrchestrationServiceTest {
         assertEquals(10000L, response.amountCents());
         assertEquals(PaymentStatus.CREATED, response.status());
         assertTrue(response.isTest());
+
+        verify(outboxEventRepository).save(any(OutboxEvent.class));
     }
 
     @Test
-    @DisplayName("confirmPayment - Happy Path Sincrono: Vault OK -> Bank Authorize OK -> Status SUCCEEDED")
+    @DisplayName("confirmPayment - Happy Path Sincrono: Vault OK -> Bank Authorize OK -> Status SUCCEEDED + Outbox Event")
     void confirmPayment_HappyPath_Success() {
         PaymentIntent intent = PaymentIntent.builder()
                 .id(intentId)
@@ -106,21 +120,26 @@ class PaymentOrchestrationServiceTest {
         BankAuthorizationResponse bankResponse = BankAuthorizationResponse.approved("tx_bank_12345", "AUTH_987654");
         given(bankSimulatorClient.authorizePayment(any(BankAuthorizationRequest.class))).willReturn(bankResponse);
 
+        given(paymentEventFactory.buildProcessingOutboxEvent(any())).willReturn(new OutboxEvent());
+        given(paymentEventFactory.buildSucceededOutboxEvent(any(), any())).willReturn(new OutboxEvent());
+
         PaymentIntentResponse response = paymentOrchestrationService.confirmPayment(intentId, request);
 
         assertEquals(PaymentStatus.SUCCEEDED, response.status());
         assertEquals("AUTH_987654", response.authorizationCode());
         assertEquals("tx_bank_12345", response.transactionId());
         assertNull(response.failureReason());
+
+        verify(outboxEventRepository, atLeastOnce()).save(any(OutboxEvent.class));
     }
 
     @Test
-    @DisplayName("confirmPayment - Rifiuto Bancario: Vault OK -> Bank Declined -> Status FAILED")
+    @DisplayName("confirmPayment - Rifiuto Bancario: Vault OK -> Bank Declined -> Status FAILED + Outbox Event con PaymentFailureCode.BANK_DECLINED")
     void confirmPayment_BankDeclined() {
         PaymentIntent intent = PaymentIntent.builder()
                 .id(intentId)
                 .merchantId(merchantId)
-                .amountCents(10099L) // Magic amount 99 for insufficient funds
+                .amountCents(10099L)
                 .currency("EUR")
                 .status(PaymentStatus.CREATED)
                 .isTest(true)
@@ -141,11 +160,16 @@ class PaymentOrchestrationServiceTest {
         BankAuthorizationResponse bankResponse = BankAuthorizationResponse.declined("51", "INSUFFICIENT_FUNDS");
         given(bankSimulatorClient.authorizePayment(any(BankAuthorizationRequest.class))).willReturn(bankResponse);
 
+        given(paymentEventFactory.buildProcessingOutboxEvent(any())).willReturn(new OutboxEvent());
+        given(paymentEventFactory.buildFailedOutboxEvent(any(), eq(PaymentFailureCode.BANK_DECLINED), any())).willReturn(new OutboxEvent());
+
         PaymentIntentResponse response = paymentOrchestrationService.confirmPayment(intentId, request);
 
         assertEquals(PaymentStatus.FAILED, response.status());
         assertEquals("INSUFFICIENT_FUNDS", response.failureReason());
         assertNull(response.authorizationCode());
+
+        verify(outboxEventRepository, atLeastOnce()).save(any(OutboxEvent.class));
     }
 
     @Test
@@ -167,7 +191,7 @@ class PaymentOrchestrationServiceTest {
     }
 
     @Test
-    @DisplayName("cancelPayment - Dovrebbe annullare un PaymentIntent in stato CREATED")
+    @DisplayName("cancelPayment - Dovrebbe annullare un PaymentIntent in stato CREATED e salvare Outbox Event con PaymentFailureCode.PAYMENT_CANCELLED")
     void cancelPayment_Success() {
         PaymentIntent intent = PaymentIntent.builder()
                 .id(intentId)
@@ -180,9 +204,11 @@ class PaymentOrchestrationServiceTest {
 
         given(paymentIntentRepository.findById(intentId)).willReturn(Optional.of(intent));
         given(paymentIntentRepository.save(any(PaymentIntent.class))).willAnswer(i -> i.getArgument(0));
+        given(paymentEventFactory.buildFailedOutboxEvent(any(), eq(PaymentFailureCode.PAYMENT_CANCELLED), any())).willReturn(new OutboxEvent());
 
         PaymentIntentResponse response = paymentOrchestrationService.cancelPayment(intentId);
 
         assertEquals(PaymentStatus.CANCELLED, response.status());
+        verify(outboxEventRepository).save(any(OutboxEvent.class));
     }
 }

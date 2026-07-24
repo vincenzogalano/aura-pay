@@ -1,6 +1,6 @@
 package com.aurapay.orchestrator.service;
 
-import com.aurapay.core.exception.AuraErrorCode;
+import com.aurapay.core.enums.PaymentFailureCode;
 import com.aurapay.core.exception.DomainRuleViolationException;
 import com.aurapay.core.exception.ResourceNotFoundException;
 import com.aurapay.orchestrator.client.BankSimulatorClient;
@@ -8,11 +8,13 @@ import com.aurapay.orchestrator.client.VaultClient;
 import com.aurapay.orchestrator.client.dto.BankAuthorizationRequest;
 import com.aurapay.orchestrator.client.dto.BankAuthorizationResponse;
 import com.aurapay.orchestrator.client.dto.VaultCardDetailsResponse;
+import com.aurapay.orchestrator.domain.OutboxEvent;
 import com.aurapay.orchestrator.domain.PaymentIntent;
 import com.aurapay.orchestrator.domain.enums.PaymentStatus;
 import com.aurapay.orchestrator.dto.request.ConfirmPaymentIntentRequest;
 import com.aurapay.orchestrator.dto.request.CreatePaymentIntentRequest;
 import com.aurapay.orchestrator.dto.response.PaymentIntentResponse;
+import com.aurapay.orchestrator.repository.OutboxEventRepository;
 import com.aurapay.orchestrator.repository.PaymentIntentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +29,8 @@ import java.util.UUID;
 public class PaymentOrchestrationService {
 
     private final PaymentIntentRepository paymentIntentRepository;
+    private final OutboxEventRepository outboxEventRepository;
+    private final PaymentEventFactory paymentEventFactory;
     private final VaultClient vaultClient;
     private final BankSimulatorClient bankSimulatorClient;
 
@@ -44,7 +48,12 @@ public class PaymentOrchestrationService {
                 .build();
 
         PaymentIntent savedIntent = paymentIntentRepository.save(intent);
-        log.info("PaymentIntent created successfully with id: {}", savedIntent.getId());
+
+        // Transactional Outbox Event
+        OutboxEvent createdOutboxEvent = paymentEventFactory.buildCreatedOutboxEvent(savedIntent);
+        outboxEventRepository.save(createdOutboxEvent);
+
+        log.info("PaymentIntent created successfully with id: {} and outbox event saved", savedIntent.getId());
         return PaymentIntentResponse.fromEntity(savedIntent);
     }
 
@@ -60,10 +69,13 @@ public class PaymentOrchestrationService {
             throw new DomainRuleViolationException("PaymentIntent is not in CREATED state, current state: " + intent.getStatus());
         }
 
-        // 1. Move state to PROCESSING
+        // 1. Move state to PROCESSING & save outbox event
         intent.setStatus(PaymentStatus.PROCESSING);
         intent.setPaymentMethodToken(request.paymentMethodToken());
         paymentIntentRepository.save(intent);
+
+        OutboxEvent processingOutboxEvent = paymentEventFactory.buildProcessingOutboxEvent(intent);
+        outboxEventRepository.save(processingOutboxEvent);
 
         // 2. Detokenize card via Vault Client
         VaultCardDetailsResponse cardDetails = vaultClient.retrieveCardDetails(request.paymentMethodToken());
@@ -81,22 +93,38 @@ public class PaymentOrchestrationService {
 
         BankAuthorizationResponse bankResponse = bankSimulatorClient.authorizePayment(bankRequest);
 
-        // 4. Update status according to bank response
+        // 4. Update status & save corresponding outbox event
         if (bankResponse != null && bankResponse.authorized()) {
             log.info("PaymentIntent {} authorized by bank. TransactionId: {}", id, bankResponse.transactionId());
             intent.setStatus(PaymentStatus.SUCCEEDED);
             intent.setAuthorizationCode(bankResponse.authorizationCode());
             intent.setTransactionId(bankResponse.transactionId());
             intent.setFailureReason(null);
+
+            PaymentIntent finalIntent = paymentIntentRepository.save(intent);
+
+            String lastFour = extractLastFour(cardDetails != null ? cardDetails.maskedPan() : null);
+            OutboxEvent succeededOutboxEvent = paymentEventFactory.buildSucceededOutboxEvent(finalIntent, lastFour);
+            outboxEventRepository.save(succeededOutboxEvent);
+
+            return PaymentIntentResponse.fromEntity(finalIntent);
         } else {
             String reason = bankResponse != null ? bankResponse.declineReason() : "Bank authorization declined";
             log.warn("PaymentIntent {} declined by bank. Reason: {}", id, reason);
             intent.setStatus(PaymentStatus.FAILED);
             intent.setFailureReason(reason);
-        }
 
-        PaymentIntent finalIntent = paymentIntentRepository.save(intent);
-        return PaymentIntentResponse.fromEntity(finalIntent);
+            PaymentIntent finalIntent = paymentIntentRepository.save(intent);
+
+            OutboxEvent failedOutboxEvent = paymentEventFactory.buildFailedOutboxEvent(
+                    finalIntent,
+                    PaymentFailureCode.BANK_DECLINED,
+                    reason
+            );
+            outboxEventRepository.save(failedOutboxEvent);
+
+            return PaymentIntentResponse.fromEntity(finalIntent);
+        }
     }
 
     @Transactional(readOnly = true)
@@ -118,7 +146,23 @@ public class PaymentOrchestrationService {
         }
 
         intent.setStatus(PaymentStatus.CANCELLED);
+        intent.setFailureReason("PaymentIntent was cancelled by merchant");
         PaymentIntent savedIntent = paymentIntentRepository.save(intent);
+
+        OutboxEvent cancelledOutboxEvent = paymentEventFactory.buildFailedOutboxEvent(
+                savedIntent,
+                PaymentFailureCode.PAYMENT_CANCELLED,
+                "PaymentIntent was cancelled by merchant"
+        );
+        outboxEventRepository.save(cancelledOutboxEvent);
+
         return PaymentIntentResponse.fromEntity(savedIntent);
+    }
+
+    private String extractLastFour(String maskedPan) {
+        if (maskedPan != null && maskedPan.length() >= 4) {
+            return maskedPan.substring(maskedPan.length() - 4);
+        }
+        return "****";
     }
 }
