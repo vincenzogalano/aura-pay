@@ -26,7 +26,7 @@ public class LedgerKafkaConsumer {
     private final ObjectMapper objectMapper;
 
     @KafkaListener(
-            topics = {"aura.payment.succeeded.v1", "aura.refund.succeeded.v1"},
+            topics = {EventType.Topics.PAYMENT_SUCCEEDED, EventType.Topics.REFUND_SUCCEEDED},
             groupId = "ledger-service-group"
     )
     @Transactional

@@ -72,8 +72,7 @@ public class LedgerService {
         String entryIdFee = "led_fee_" + UUID.randomUUID().toString().substring(0, 8);
         LedgerEntry creditFee = LedgerEntry.builder()
                 .id(UUID.randomUUID())
-                .entryId(entryIdMerchant) // distinct ID below
-                .entryId("led_fee_" + UUID.randomUUID().toString().substring(0, 8))
+                .entryId(entryIdFee)
                 .merchantId(event.merchantId())
                 .transactionType(TransactionType.PAYMENT)
                 .entryType(EntryType.CREDIT)

@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS processed_events (
     event_id VARCHAR(255) PRIMARY KEY,
     event_type VARCHAR(255) NOT NULL,
-    processed_at TIMESTAMPTZ NOT NULL
+    processed_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS ledger_entries (
@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS ledger_entries (
     amount_cents BIGINT NOT NULL,
     currency VARCHAR(10) NOT NULL DEFAULT 'EUR',
     is_test BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMPTZ NOT NULL
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_ledger_merchant_account ON ledger_entries (merchant_id, account_type, is_test);
