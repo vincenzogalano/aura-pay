@@ -3,7 +3,7 @@ package com.aurapay.banksimulator.exception;
 import com.aurapay.core.exception.AuraErrorCode;
 import com.aurapay.core.exception.BusinessException;
 import com.aurapay.core.exception.ErrorResponse;
-import com.aurapay.core.exception.FieldErrorDto;
+import com.aurapay.core.exception.FieldErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,8 +32,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex, HttpServletRequest request) {
-        List<FieldErrorDto> fieldErrors = ex.getBindingResult().getFieldErrors().stream()
-                .map(fe -> new FieldErrorDto(fe.getField(), fe.getDefaultMessage(), fe.getRejectedValue()))
+        List<FieldErrorResponse> fieldErrors = ex.getBindingResult().getFieldErrors().stream()
+                .map(fe -> new FieldErrorResponse(fe.getField(), fe.getDefaultMessage(), fe.getRejectedValue()))
                 .toList();
 
         ErrorResponse response = ErrorResponse.of(
