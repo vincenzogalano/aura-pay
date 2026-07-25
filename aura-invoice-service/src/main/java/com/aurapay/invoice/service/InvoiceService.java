@@ -79,6 +79,7 @@ public class InvoiceService {
                 .pdfObjectKey(objectKey)
                 .status(InvoiceStatus.GENERATED)
                 .isTest(event.isTest())
+                .createdAt(Instant.now())
                 .build();
 
         try {
@@ -160,6 +161,7 @@ public class InvoiceService {
                 .pdfObjectKey(objectKey)
                 .status(InvoiceStatus.GENERATED)
                 .isTest(event.isTest())
+                .createdAt(Instant.now())
                 .build();
 
         try {

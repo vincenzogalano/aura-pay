@@ -12,10 +12,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import org.springframework.stereotype.Component;
+
 import java.time.Instant;
 import java.util.Collections;
 
 @Slf4j
+@Component("invoiceGlobalExceptionHandler")
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -69,7 +72,7 @@ public class GlobalExceptionHandler {
                 Instant.now(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 AuraErrorCode.INTERNAL_SERVER_ERROR.getCode(),
-                "An unexpected internal error occurred: " + ex.getMessage(),
+                "An unexpected internal server error occurred",
                 request.getRequestURI(),
                 Collections.emptyList()
         );

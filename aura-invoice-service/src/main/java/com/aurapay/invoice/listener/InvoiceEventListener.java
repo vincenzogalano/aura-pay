@@ -1,5 +1,6 @@
 package com.aurapay.invoice.listener;
 
+import com.aurapay.core.events.EventType;
 import com.aurapay.core.events.PaymentSucceededEvent;
 import com.aurapay.core.events.RefundSucceededEvent;
 import com.aurapay.invoice.service.InvoiceService;
@@ -15,7 +16,7 @@ public class InvoiceEventListener {
 
     private final InvoiceService invoiceService;
 
-    @KafkaListener(topics = "aura.payment.succeeded.v1", groupId = "invoice-service-group")
+    @KafkaListener(topics = EventType.Topics.PAYMENT_SUCCEEDED, groupId = "invoice-service-group")
     public void onPaymentSucceeded(PaymentSucceededEvent event) {
         log.info("Kafka consumer received PaymentSucceededEvent paymentIntentId={}", event.paymentIntentId());
         try {
@@ -25,7 +26,7 @@ public class InvoiceEventListener {
         }
     }
 
-    @KafkaListener(topics = "aura.refund.succeeded.v1", groupId = "invoice-service-group")
+    @KafkaListener(topics = EventType.Topics.REFUND_SUCCEEDED, groupId = "invoice-service-group")
     public void onRefundSucceeded(RefundSucceededEvent event) {
         log.info("Kafka consumer received RefundSucceededEvent refundId={}", event.refundId());
         try {

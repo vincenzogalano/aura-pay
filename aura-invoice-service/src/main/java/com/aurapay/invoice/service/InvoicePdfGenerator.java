@@ -13,6 +13,9 @@ import org.springframework.stereotype.Service;
 
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
@@ -40,7 +43,7 @@ public class InvoicePdfGenerator {
                 contentStream.setFont(fontBold, 20);
                 contentStream.setNonStrokingColor(new Color(26, 86, 219)); // Primary blue color
                 contentStream.newLineAtOffset(50, 750);
-                contentStream.showText("AuraPay — Payment Infrastructure");
+                contentStream.showText("AuraPay - Payment Infrastructure");
                 contentStream.endText();
 
                 // Document Title
@@ -56,7 +59,8 @@ public class InvoicePdfGenerator {
                 int y = 675;
                 drawLabelValue(contentStream, fontBold, fontRegular, "Numero Documento:", invoice.getInvoiceNumber(), 50, y);
                 y -= 20;
-                drawLabelValue(contentStream, fontBold, fontRegular, "Data Emissione:", DATE_FORMATTER.format(invoice.getCreatedAt()), 50, y);
+                Instant createdAt = invoice.getCreatedAt() != null ? invoice.getCreatedAt() : Instant.now();
+                drawLabelValue(contentStream, fontBold, fontRegular, "Data Emissione:", DATE_FORMATTER.format(createdAt), 50, y);
                 y -= 20;
                 drawLabelValue(contentStream, fontBold, fontRegular, "ID Merchant:", invoice.getMerchantId().toString(), 50, y);
                 y -= 20;
@@ -103,8 +107,8 @@ public class InvoicePdfGenerator {
                         : "Corrispettivo Transazione Pagamento";
                 contentStream.showText(description);
 
-                double amount = invoice.getAmountCents() / 100.00;
-                String formattedAmount = String.format(Locale.US, "%.2f %s", amount, invoice.getCurrency());
+                BigDecimal amount = BigDecimal.valueOf(invoice.getAmountCents()).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+                String formattedAmount = String.format(Locale.US, "%s %s", amount.toPlainString(), invoice.getCurrency());
                 contentStream.newLineAtOffset(350, 0);
                 contentStream.showText(formattedAmount);
                 contentStream.endText();
@@ -127,7 +131,7 @@ public class InvoicePdfGenerator {
                 contentStream.setFont(fontRegular, 9);
                 contentStream.setNonStrokingColor(new Color(120, 120, 120));
                 contentStream.newLineAtOffset(50, 40);
-                contentStream.showText("AuraPay Ltd — Microservice Event-Driven Architecture Platform. All rights reserved.");
+                contentStream.showText("AuraPay Ltd - Microservice Event-Driven Architecture Platform. All rights reserved.");
                 contentStream.endText();
 
                 // Watermark for Test mode
