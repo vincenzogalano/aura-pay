@@ -17,17 +17,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
 
-@Component
+@Component("hashiCorpVaultClient")
 @Slf4j
-public class VaultClient {
+public class HashiCorpVaultClient {
 
     private static final String KEY_NAME = "aura-pay-key";
 
     private final RestClient restClient;
 
-    public VaultClient(
-            @Value("${aurapay.vault.vault-url}") String vaultUrl,
-            @Value("${aurapay.vault.vault-token}") String vaultToken) {
+    public HashiCorpVaultClient(
+            @Value("${aurapay.vault.vault-url:http://localhost:8200}") String vaultUrl,
+            @Value("${aurapay.vault.vault-token:root}") String vaultToken) {
         this.restClient = RestClient.builder()
                 .baseUrl(vaultUrl)
                 .defaultHeader("X-Vault-Token", vaultToken)
@@ -49,7 +49,6 @@ public class VaultClient {
                         .toBodilessEntity();
                 log.info("Transit Secrets Engine enabled in Vault");
             } catch (Exception e) {
-                // Ignore if it's already enabled or there's a permission issue (already mounted)
                 log.debug("Transit Secrets Engine might already be enabled: {}", e.getMessage());
             }
 

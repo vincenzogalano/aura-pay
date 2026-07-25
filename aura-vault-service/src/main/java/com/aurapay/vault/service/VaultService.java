@@ -5,7 +5,7 @@ import com.aurapay.core.exception.ResourceNotFoundException;
 import com.aurapay.core.exception.AuraErrorCode;
 import com.aurapay.core.security.ApiKeyGenerator;
 import com.aurapay.core.security.CardMaskingUtils;
-import com.aurapay.vault.client.VaultClient;
+import com.aurapay.vault.client.HashiCorpVaultClient;
 import com.aurapay.vault.dto.request.TokenizeRequest;
 import com.aurapay.vault.dto.response.CardDetailsResponse;
 import com.aurapay.vault.dto.response.TokenResponse;
@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
 @Service
@@ -27,12 +28,12 @@ import java.time.temporal.ChronoUnit;
 public class VaultService {
 
     private final CardTokenRepository cardTokenRepository;
-    private final VaultClient vaultClient;
+    private final HashiCorpVaultClient vaultClient;
     private final int tokenTtlMinutes;
 
     public VaultService(
             CardTokenRepository cardTokenRepository,
-            VaultClient vaultClient,
+            HashiCorpVaultClient vaultClient,
             @Value("${aurapay.vault.token-ttl-minutes:15}") int tokenTtlMinutes) {
         this.cardTokenRepository = cardTokenRepository;
         this.vaultClient = vaultClient;
@@ -167,7 +168,7 @@ public class VaultService {
 
     private void validateExpiration(int month, int year) {
         // Expiration year should be current or in the future
-        java.time.LocalDate today = java.time.LocalDate.now();
+        LocalDate today = LocalDate.now();
         int currentYear = today.getYear();
         int currentMonth = today.getMonthValue();
 

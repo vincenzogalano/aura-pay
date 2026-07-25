@@ -1,7 +1,7 @@
 FROM eclipse-temurin:21-jdk-alpine AS builder
 WORKDIR /app
 COPY . .
-RUN ./mvnw package -DskipTests -pl aura-vault-service -am
+RUN apk add --no-cache maven && mvn package -DskipTests -pl aura-vault-service -am
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app

@@ -2,7 +2,7 @@ package com.aurapay.vault.service;
 
 import com.aurapay.core.exception.BusinessException;
 import com.aurapay.core.exception.AuraErrorCode;
-import com.aurapay.vault.client.VaultClient;
+import com.aurapay.vault.client.HashiCorpVaultClient;
 import com.aurapay.vault.dto.request.TokenizeRequest;
 import com.aurapay.vault.dto.response.CardDetailsResponse;
 import com.aurapay.vault.dto.response.TokenResponse;
@@ -33,7 +33,7 @@ class VaultServiceTest {
     private CardTokenRepository cardTokenRepository;
 
     @Mock
-    private VaultClient vaultClient;
+    private HashiCorpVaultClient vaultClient;
 
     private VaultService vaultService;
 
@@ -64,7 +64,7 @@ class VaultServiceTest {
         assertThat(response.token()).startsWith("tok_");
         assertThat(response.maskedPan()).isEqualTo("411111******1111");
         assertThat(response.cardBrand()).isEqualTo(CardBrand.VISA);
-        assertThat(response.liveMode()).isFalse(); // test key means isTest=true, so livemode=false
+        assertThat(response.livemode()).isFalse(); // test key means isTest=true, so livemode=false
 
         ArgumentCaptor<CardToken> tokenCaptor = ArgumentCaptor.forClass(CardToken.class);
         verify(cardTokenRepository).save(tokenCaptor.capture());
@@ -121,7 +121,7 @@ class VaultServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.cardNumber()).isEqualTo("4111111111111111");
         assertThat(response.cvv()).isEqualTo("123");
-        assertThat(response.liveMode()).isFalse();
+        assertThat(response.livemode()).isFalse();
 
         assertThat(cardToken.getUsedAt()).isNotNull();
         verify(cardTokenRepository).save(cardToken);

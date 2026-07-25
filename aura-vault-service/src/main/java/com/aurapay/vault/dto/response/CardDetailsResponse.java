@@ -11,5 +11,5 @@ public record CardDetailsResponse(
         String cvv,
         String maskedPan,
         CardBrand cardBrand,
-        @JsonProperty("livemode") boolean liveMode
+        boolean livemode
 ) {}

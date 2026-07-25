@@ -1,6 +1,6 @@
 package com.aurapay.vault;
 
-import com.aurapay.vault.client.VaultClient;
+import com.aurapay.vault.client.HashiCorpVaultClient;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class AuraVaultServiceApplicationTests {
 
     @MockitoBean
-    private VaultClient vaultClient;
+    private HashiCorpVaultClient vaultClient;
 
     @Test
     @DisplayName("Dovrebbe caricare il contesto applicativo Spring Boot di Vault Service con successo")
