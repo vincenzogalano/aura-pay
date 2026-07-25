@@ -8,6 +8,8 @@ import {
   FileText, 
   Webhook, 
   Zap,
+  PlayCircle,
+  Terminal,
   ExternalLink
 } from 'lucide-react';
 import { useMerchant } from '../../context/MerchantContext';
@@ -15,13 +17,18 @@ import { useMerchant } from '../../context/MerchantContext';
 export const Sidebar: React.FC = () => {
   const { merchant } = useMerchant();
 
-  const navItems = [
+  const mainItems = [
     { label: 'Overview', path: '/dashboard', icon: LayoutDashboard },
     { label: 'Transazioni', path: '/transactions', icon: CreditCard },
     { label: 'KYB & Profilo', path: '/onboarding', icon: UserCheck, badge: merchant.status === 'VERIFIED' ? 'LIVE OK' : 'PENDING' },
     { label: 'API Keys', path: '/api-keys', icon: Key },
     { label: 'Fatture PDF', path: '/invoices', icon: FileText },
     { label: 'Webhooks', path: '/webhooks', icon: Webhook },
+  ];
+
+  const devToolsItems = [
+    { label: 'Checkout Demo', path: '/checkout-demo', icon: PlayCircle, highlight: true },
+    { label: 'Dev Console', path: '/developer', icon: Terminal },
   ];
 
   return (
@@ -39,49 +46,82 @@ export const Sidebar: React.FC = () => {
         </div>
 
         {/* Navigation Menu */}
-        <nav className="px-3 py-6 space-y-1.5">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }: { isActive: boolean }) =>
-                  `flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                    isActive
-                      ? 'bg-indigo-600/15 text-indigo-400 border border-indigo-500/30 shadow-glow-indigo font-semibold'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
-                  }`
-                }
-              >
-                <div className="flex items-center gap-3">
-                  <Icon className="w-5 h-5" />
-                  <span>{item.label}</span>
-                </div>
-                {item.badge && (
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                    item.badge === 'LIVE OK' 
-                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' 
-                      : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                  }`}>
-                    {item.badge}
-                  </span>
-                )}
-              </NavLink>
-            );
-          })}
+        <nav className="px-3 py-4 space-y-6">
+          <div className="space-y-1">
+            <div className="px-3 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Gestione</div>
+            {mainItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }: { isActive: boolean }) =>
+                    `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 ${
+                      isActive
+                        ? 'bg-indigo-600/15 text-indigo-400 border border-indigo-500/30 shadow-glow-indigo font-semibold'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+                    }`
+                  }
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon className="w-4 h-4" />
+                    <span>{item.label}</span>
+                  </div>
+                  {item.badge && (
+                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                      item.badge === 'LIVE OK' 
+                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' 
+                        : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                    }`}>
+                      {item.badge}
+                    </span>
+                  )}
+                </NavLink>
+              );
+            })}
+          </div>
+
+          <div className="space-y-1 pt-2 border-t border-slate-900">
+            <div className="px-3 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Developer Suite</div>
+            {devToolsItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }: { isActive: boolean }) =>
+                    `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 ${
+                      isActive
+                        ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 shadow-glow-indigo font-semibold'
+                        : item.highlight
+                        ? 'text-cyan-300 hover:text-white bg-cyan-950/20 border border-cyan-500/20 hover:bg-cyan-900/40'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+                    }`
+                  }
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon className="w-4 h-4" />
+                    <span>{item.label}</span>
+                  </div>
+                  {item.highlight && (
+                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                  )}
+                </NavLink>
+              );
+            })}
+          </div>
         </nav>
       </div>
 
       {/* Footer Info & Documentation */}
       <div className="p-4 border-t border-slate-800/60">
-        <div className="glass-card p-3 text-xs space-y-2">
-          <div className="font-semibold text-slate-300 flex items-center justify-between">
-            <span>AuraPay API v1.0</span>
+        <div className="glass-card p-3 text-xs space-y-1.5">
+          <div className="font-semibold text-slate-300 flex items-center justify-between text-xs">
+            <span>AuraPay Engine v1.0</span>
             <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
           </div>
-          <p className="text-slate-500 text-[11px]">
-            Event-Driven Payment Engine con ledger a partita doppia.
+          <p className="text-slate-500 text-[11px] leading-tight">
+            Event-Driven Payment Gateway con Ledger a partita doppia.
           </p>
         </div>
       </div>

@@ -8,6 +8,8 @@ import { OnboardingPage } from './pages/OnboardingPage';
 import { ApiKeysPage } from './pages/ApiKeysPage';
 import { InvoicesPage } from './pages/InvoicesPage';
 import { WebhooksPage } from './pages/WebhooksPage';
+import { CheckoutSimulatorPage } from './pages/CheckoutSimulatorPage';
+import { DeveloperConsolePage } from './pages/DeveloperConsolePage';
 import { Toaster } from 'sonner';
 
 export const App: React.FC = () => {
@@ -24,6 +26,8 @@ export const App: React.FC = () => {
             <Route path="api-keys" element={<ApiKeysPage />} />
             <Route path="invoices" element={<InvoicesPage />} />
             <Route path="webhooks" element={<WebhooksPage />} />
+            <Route path="checkout-demo" element={<CheckoutSimulatorPage />} />
+            <Route path="developer" element={<DeveloperConsolePage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Routes>
