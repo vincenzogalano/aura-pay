@@ -46,7 +46,7 @@ public class LedgerKafkaConsumer {
                 return;
             }
 
-            // Save processed event for effectively-once semantics
+
             ProcessedEvent processedEvent = ProcessedEvent.builder()
                     .eventId(eventId)
                     .eventType(eventTypeStr != null ? eventTypeStr : "UNKNOWN")

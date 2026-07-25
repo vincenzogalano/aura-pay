@@ -49,7 +49,6 @@ public class PaymentOrchestrationService {
 
         PaymentIntent savedIntent = paymentIntentRepository.save(intent);
 
-        // Transactional Outbox Event
         OutboxEvent createdOutboxEvent = paymentEventFactory.buildCreatedOutboxEvent(savedIntent);
         outboxEventRepository.save(createdOutboxEvent);
 
@@ -60,10 +59,8 @@ public class PaymentOrchestrationService {
     public PaymentIntentResponse confirmPayment(UUID id, ConfirmPaymentIntentRequest request) {
         log.info("Confirming PaymentIntent id: {}", id);
 
-        // Phase 1: Short DB Transaction to move state to PROCESSING
         PaymentIntent intent = startProcessingTransaction(id, request.paymentMethodToken());
 
-        // Phase 2: HTTP Network calls outside DB Transaction
         VaultCardDetailsResponse cardDetails = vaultServiceClient.retrieveCardDetails(request.paymentMethodToken());
         log.info("Card details retrieved for token {}, masked PAN: {}", request.paymentMethodToken(), cardDetails.maskedPan());
 
@@ -78,7 +75,6 @@ public class PaymentOrchestrationService {
 
         BankAuthorizationResponse bankResponse = bankSimulatorClient.authorizePayment(bankRequest);
 
-        // Phase 3: Short DB Transaction to finalize PaymentIntent state & Outbox event
         return completePaymentTransaction(id, cardDetails, bankResponse);
     }
 

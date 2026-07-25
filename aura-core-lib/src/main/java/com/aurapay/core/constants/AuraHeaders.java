@@ -1,8 +1,4 @@
 package com.aurapay.core.constants;
-
-/**
- * Standard HTTP Header constants used across AuraPay microservices.
- */
 public final class AuraHeaders {
 
     public static final String CORRELATION_ID = "X-Correlation-ID";
@@ -13,6 +9,6 @@ public final class AuraHeaders {
     public static final String X_AURA_TIMESTAMP = "X-Aura-Timestamp";
 
     private AuraHeaders() {
-        // Utility class
+
     }
 }

@@ -67,7 +67,7 @@ class VaultControllerTest {
     @Test
     @DisplayName("POST /v1/tokens - Should return 400 Bad Request on validation failure")
     void tokenize_validationError() throws Exception {
-        // Expiration month is invalid (13) and CVV is invalid ("1")
+
         TokenizeRequest request = new TokenizeRequest(
                 "4111", "John Doe", 13, 2030, "1"
         );

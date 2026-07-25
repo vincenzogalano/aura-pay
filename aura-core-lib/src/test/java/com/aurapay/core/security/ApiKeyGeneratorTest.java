@@ -42,6 +42,6 @@ class ApiKeyGeneratorTest {
 
         assertThat(sha256)
                 .isNotNull()
-                .hasSize(64); // 256 bits = 64 hex chars
+                .hasSize(64);
     }
 }

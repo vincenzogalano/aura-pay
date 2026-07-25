@@ -9,9 +9,6 @@ import org.springframework.http.client.ClientHttpResponse;
 
 import java.io.IOException;
 
-/**
- * HTTP Client Interceptor to propagate X-Correlation-ID from MDC context across downstream REST calls.
- */
 public class CorrelationIdInterceptor implements ClientHttpRequestInterceptor {
 
     @Override

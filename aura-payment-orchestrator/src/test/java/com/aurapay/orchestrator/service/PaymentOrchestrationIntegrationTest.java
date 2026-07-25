@@ -57,7 +57,7 @@ class PaymentOrchestrationIntegrationTest {
         UUID merchantId = UUID.randomUUID();
         CreatePaymentIntentRequest createReq = new CreatePaymentIntentRequest(merchantId, 5000L, "EUR", "Test Outbox", true);
 
-        // 1. Create PaymentIntent -> saves 1 OutboxEvent (PAYMENT_INTENT_CREATED)
+
         PaymentIntentResponse createdResponse = paymentOrchestrationService.createPaymentIntent(createReq);
         assertNotNull(createdResponse);
         assertEquals(PaymentStatus.CREATED, createdResponse.status());
@@ -68,7 +68,7 @@ class PaymentOrchestrationIntegrationTest {
         assertEquals(createdResponse.id().toString(), outboxAfterCreate.get(0).getAggregateId());
         assertFalse(outboxAfterCreate.get(0).isProcessed());
 
-        // Mocks for confirm
+
         VaultCardDetailsResponse cardDetails = new VaultCardDetailsResponse(
                 "4532011111111111", "Jane Doe", 11, 2029, "456", "453201******1111", "VISA", true
         );
@@ -77,7 +77,7 @@ class PaymentOrchestrationIntegrationTest {
         BankAuthorizationResponse bankResponse = BankAuthorizationResponse.approved("tx_bank_999", "AUTH_111");
         given(bankSimulatorClient.authorizePayment(any(BankAuthorizationRequest.class))).willReturn(bankResponse);
 
-        // 2. Confirm PaymentIntent -> saves 2 OutboxEvents (PROCESSING and SUCCEEDED)
+
         ConfirmPaymentIntentRequest confirmReq = new ConfirmPaymentIntentRequest("tok_4532011111111111");
         PaymentIntentResponse confirmedResponse = paymentOrchestrationService.confirmPayment(createdResponse.id(), confirmReq);
 

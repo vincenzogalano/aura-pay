@@ -34,7 +34,7 @@ class LedgerControllerTest {
     @Test
     @DisplayName("Should return 200 OK with merchant available balance")
     void getBalance_ShouldReturnMerchantBalance() throws Exception {
-        // Arrange
+
         MerchantBalanceResponse response = new MerchantBalanceResponse(
                 "mch_001",
                 9700L,
@@ -44,7 +44,7 @@ class LedgerControllerTest {
         );
         given(ledgerService.getMerchantBalance("mch_001", true)).willReturn(response);
 
-        // Act & Assert
+& Assert
         mockMvc.perform(get("/v1/ledger/accounts/mch_001/balance")
                         .param("isTest", "true"))
                 .andExpect(status().isOk())
@@ -57,7 +57,7 @@ class LedgerControllerTest {
     @Test
     @DisplayName("Should return 200 OK with paginated merchant ledger entries")
     void getEntries_ShouldReturnPaginatedLedgerEntries() throws Exception {
-        // Arrange
+
         LedgerEntryResponse entry = new LedgerEntryResponse(
                 "led_100",
                 "mch_001",
@@ -74,7 +74,7 @@ class LedgerControllerTest {
 
         given(ledgerService.getMerchantEntries(eq("mch_001"), eq(true), any())).willReturn(page);
 
-        // Act & Assert
+& Assert
         mockMvc.perform(get("/v1/ledger/entries/mch_001")
                         .param("isTest", "true")
                         .param("page", "0")

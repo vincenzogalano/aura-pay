@@ -1,8 +1,4 @@
 package com.aurapay.core.exception;
-
-/**
- * Base exception for business logic errors in AuraPay domain.
- */
 public class BusinessException extends AuraException {
 
     private final String errorCode;

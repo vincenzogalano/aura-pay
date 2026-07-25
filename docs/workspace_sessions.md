@@ -65,14 +65,14 @@ Di seguito è riportato l'ordine sequenziale delle sessioni di sviluppo. Ciascun
 *   **Stato:** `Completato [x]`
 *   **Dipendenze:** Sessione 6
 
-### ⚪ Sessione 10: E2E Integration Testing & Polish Backend
-*   **Obiettivo:** Creazione di una suite completa di test E2E (es. via script o test di integrazione Spring Boot) per verificare l'intero flusso del backend senza frontend. Polish del codice del backend.
-*   **Stato:** `Non Iniziato [ ]`
+### 🟢 Sessione 10: E2E Integration Testing & Polish Backend
+*   **Obiettivo:** Creazione della suite completa di test E2E `aura-e2e-tests` (18 casi di test con JUnit 5 / Spring Boot) per verificare l'intero flusso del backend (onboarding, tokenizzazione Vault, PaymentIntent, Partita Doppia Ledger, generazione PDF Fatture su MinIO e firme Webhook HMAC-SHA256). Risoluzione Bean Collisions monorepo e Polish Backend completo.
+*   **Stato:** `Completato [x]`
 *   **Dipendenze:** Sessione 7, Sessione 8, Sessione 9
 
-### ⚪ Sessione 11: React Frontend (Dashboard)
-*   **Obiettivo:** Sviluppo dell'applicazione frontend React + TS + Vite. Connessione a tutti gli endpoint del backend (onboarding, storico transazioni, rimborsi, fatture, webhooks).
-*   **Stato:** `Non Iniziato [ ]`
+### 🟢 Sessione 11: React Frontend (Merchant Dashboard)
+*   **Obiettivo:** Creazione dell'applicazione SPA React 18 + TypeScript + Vite + Tailwind CSS (`aura-frontend`). Dashboard completa con gestione profilo merchant, onboarding self-service, verifica KYB simulata per lo sblocco dell'ambiente LIVE, selettore Sandbox (TEST) ↔ LIVE con badge e toast, grafico Recharts dei volumi, tabella transazioni con timeline eventi e modal di rimborso (totale e parziale), gestione fatture PDF via Presigned URL S3 MinIO e configurazione webhook HMAC con log consegne e replay Dead Letter. Fallback trasparente verso Mock Data per sviluppo offline.
+*   **Stato:** `Completato [x]`
 *   **Dipendenze:** Sessione 10
 
 ### ⚪ Sessione 12: Observability, Tracing & Showcase Finale

@@ -3,7 +3,7 @@ package com.aurapay.banksimulator.util;
 public final class LatencyUtils {
 
     private LatencyUtils() {
-        // Utility class
+
     }
 
     public static void simulateLatency(long latencyMs) {

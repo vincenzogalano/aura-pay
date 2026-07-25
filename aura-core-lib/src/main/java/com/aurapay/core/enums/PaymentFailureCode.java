@@ -1,8 +1,4 @@
 package com.aurapay.core.enums;
-
-/**
- * Enumeration of payment failure codes used in PaymentFailedEvent and Outbox events.
- */
 public enum PaymentFailureCode {
 
     BANK_DECLINED,

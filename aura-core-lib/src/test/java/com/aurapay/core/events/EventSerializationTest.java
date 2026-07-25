@@ -28,7 +28,7 @@ class EventSerializationTest {
     void shouldSerializePaymentSucceededEvent() throws Exception {
         PaymentSucceededEvent originalEvent = new PaymentSucceededEvent(
                 "evt_" + UUID.randomUUID(),
-                null, // should default to topic name
+                null,
                 Instant.now(),
                 "pi_99887766",
                 "mch_12345",

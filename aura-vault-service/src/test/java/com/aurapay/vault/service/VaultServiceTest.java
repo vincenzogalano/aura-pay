@@ -45,7 +45,7 @@ class VaultServiceTest {
     @Test
     @DisplayName("Should tokenize card successfully when details are valid")
     void testTokenizeHappyPath() {
-        // Arrange
+
         TokenizeRequest request = new TokenizeRequest(
                 "4111 1111 1111 1111",
                 "John Doe",
@@ -56,15 +56,15 @@ class VaultServiceTest {
         when(vaultClient.encrypt("4111111111111111")).thenReturn("vault:v1:encrypted_pan");
         when(vaultClient.encrypt("123")).thenReturn("vault:v1:encrypted_cvv");
 
-        // Act
+
         TokenResponse response = vaultService.tokenize(request, "Bearer pk_test_123");
 
-        // Assert
+
         assertThat(response).isNotNull();
         assertThat(response.token()).startsWith("tok_");
         assertThat(response.maskedPan()).isEqualTo("411111******1111");
         assertThat(response.cardBrand()).isEqualTo(CardBrand.VISA);
-        assertThat(response.livemode()).isFalse(); // test key means isTest=true, so livemode=false
+        assertThat(response.livemode()).isFalse();
 
         ArgumentCaptor<CardToken> tokenCaptor = ArgumentCaptor.forClass(CardToken.class);
         verify(cardTokenRepository).save(tokenCaptor.capture());
@@ -77,16 +77,16 @@ class VaultServiceTest {
     @Test
     @DisplayName("Should throw BusinessException when card number fails Luhn check")
     void testTokenizeInvalidLuhn() {
-        // Arrange
+
         TokenizeRequest request = new TokenizeRequest(
-                "4111 1111 1111 1112", // invalid last digit
+                "4111 1111 1111 1112",
                 "John Doe",
                 12,
                 2030,
                 "123"
         );
 
-        // Act & Assert
+
         assertThatThrownBy(() -> vaultService.tokenize(request, "Bearer pk_test_123"))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Luhn validation failed");
@@ -95,7 +95,7 @@ class VaultServiceTest {
     @Test
     @DisplayName("Should retrieve card details successfully for valid unused token")
     void testRetrieveHappyPath() {
-        // Arrange
+
         String token = "tok_test_token";
         CardToken cardToken = CardToken.builder()
                 .token(token)
@@ -114,10 +114,10 @@ class VaultServiceTest {
         when(vaultClient.decrypt("vault:v1:encrypted_pan")).thenReturn("4111111111111111");
         when(vaultClient.decrypt("vault:v1:encrypted_cvv")).thenReturn("123");
 
-        // Act
+
         CardDetailsResponse response = vaultService.retrieve(token, "Bearer sk_test_123");
 
-        // Assert
+
         assertThat(response).isNotNull();
         assertThat(response.cardNumber()).isEqualTo("4111111111111111");
         assertThat(response.cvv()).isEqualTo("123");
@@ -130,7 +130,7 @@ class VaultServiceTest {
     @Test
     @DisplayName("Should throw BusinessException when token is expired")
     void testRetrieveExpiredToken() {
-        // Arrange
+
         String token = "tok_test_token";
         CardToken cardToken = CardToken.builder()
                 .token(token)
@@ -139,7 +139,7 @@ class VaultServiceTest {
 
         when(cardTokenRepository.findByToken(token)).thenReturn(Optional.of(cardToken));
 
-        // Act & Assert
+
         assertThatThrownBy(() -> vaultService.retrieve(token, "Bearer sk_test_123"))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Token has expired");
@@ -148,7 +148,7 @@ class VaultServiceTest {
     @Test
     @DisplayName("Should throw BusinessException when token has already been retrieved")
     void testRetrieveAlreadyUsedToken() {
-        // Arrange
+
         String token = "tok_test_token";
         CardToken cardToken = CardToken.builder()
                 .token(token)
@@ -158,7 +158,7 @@ class VaultServiceTest {
 
         when(cardTokenRepository.findByToken(token)).thenReturn(Optional.of(cardToken));
 
-        // Act & Assert
+
         assertThatThrownBy(() -> vaultService.retrieve(token, "Bearer sk_test_123"))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Token has already been used");
@@ -167,7 +167,7 @@ class VaultServiceTest {
     @Test
     @DisplayName("Should throw Unauthorized when API key environment mismatches token environment")
     void testRetrieveEnvMismatch() {
-        // Arrange
+
         String token = "tok_test_token";
         CardToken cardToken = CardToken.builder()
                 .token(token)
@@ -177,7 +177,7 @@ class VaultServiceTest {
 
         when(cardTokenRepository.findByToken(token)).thenReturn(Optional.of(cardToken));
 
-        // Act & Assert
+
         assertThatThrownBy(() -> vaultService.retrieve(token, "Bearer sk_live_123"))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", AuraErrorCode.UNAUTHORIZED.getCode());

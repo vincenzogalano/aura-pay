@@ -87,14 +87,13 @@ public class MerchantEventsConsumer {
 
     private UUID extractMerchantId(DomainEvent event) {
         try {
-            // Using reflection or Jackson inspection to retrieve merchantId field from record
             String json = objectMapper.writeValueAsString(event);
             var node = objectMapper.readTree(json);
             if (node.has("merchantId")) {
                 return UUID.fromString(node.get("merchantId").asText());
             }
         } catch (Exception e) {
-            log.error("Error reading merchantId from event", e);
+            log.error("Failed to extract merchantId from Kafka record payload: {}", e.getMessage());
         }
         return null;
     }

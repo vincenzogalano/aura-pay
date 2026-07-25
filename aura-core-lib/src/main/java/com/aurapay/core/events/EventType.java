@@ -1,8 +1,4 @@
 package com.aurapay.core.events;
-
-/**
- * Enumeration of all domain event types and their corresponding Kafka topics.
- */
 public enum EventType {
 
     MERCHANT_CREATED("aura.merchant.created.v1"),

@@ -59,7 +59,7 @@ class WebhookDispatcherServiceTest {
                 .eventId("evt_123")
                 .merchantId(merchantId)
                 .eventType("payment.succeeded")
-                .targetUrl("http://unreachable-host.local/webhook") // Invalid domain to force failure
+                .targetUrl("http://unreachable-host.local/webhook")
                 .payload("{\"test\":true}")
                 .attemptCount(0)
                 .maxAttempts(5)
@@ -94,7 +94,7 @@ class WebhookDispatcherServiceTest {
                 .eventType("payment.succeeded")
                 .targetUrl("http://unreachable-host.local/webhook")
                 .payload("{\"test\":true}")
-                .attemptCount(4) // 4 attempt already done, this is 5th
+                .attemptCount(4)
                 .maxAttempts(5)
                 .status(DeliveryStatus.FAILED)
                 .createdAt(Instant.now())

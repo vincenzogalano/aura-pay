@@ -1,8 +1,4 @@
 package com.aurapay.core.events;
-
-/**
- * Standard ISO 8583 response codes used by acquiring bank simulator.
- */
 public enum BankResponseCode {
     APPROVED("00", "Approved"),
     INSUFFICIENT_FUNDS("51", "INSUFFICIENT_FUNDS"),

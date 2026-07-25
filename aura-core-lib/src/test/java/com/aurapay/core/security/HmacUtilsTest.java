@@ -21,7 +21,7 @@ class HmacUtilsTest {
         assertThat(signature1)
                 .isNotNull()
                 .isNotEmpty()
-                .hasSize(64) // 256 bits in hex = 64 chars
+                .hasSize(64)
                 .isEqualTo(signature2);
     }
 

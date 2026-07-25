@@ -54,8 +54,8 @@ class LedgerServiceTest {
                 Instant.now(),
                 "pi_test_123",
                 "mch_test_99",
-                10000L, // 100.00 EUR gross
-                300L,   // 3.00 EUR fee
+                10000L,
+                300L,
                 "EUR",
                 "4242",
                 "AUTH_123",
@@ -69,7 +69,7 @@ class LedgerServiceTest {
                 "re_test_456",
                 "pi_test_123",
                 "mch_test_99",
-                2000L, // 20.00 EUR refund
+                2000L,
                 "customer_request",
                 true
         );
@@ -78,10 +78,10 @@ class LedgerServiceTest {
     @Test
     @DisplayName("Should record payment entries with strictly balanced double-entry accounting (Debits == Credits)")
     void recordPayment_ShouldCreateBalancedDoubleEntry() {
-        // Act
+
         ledgerService.recordPayment(paymentEvent);
 
-        // Assert
+
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<LedgerEntry>> captor = ArgumentCaptor.forClass(List.class);
         verify(ledgerEntryRepository).saveAll(captor.capture());
@@ -108,7 +108,7 @@ class LedgerServiceTest {
                 .findFirst()
                 .orElseThrow();
 
-        assertThat(merchantEntry.getAmountCents()).isEqualTo(9700L); // 10000 - 300
+        assertThat(merchantEntry.getAmountCents()).isEqualTo(9700L);
         assertThat(merchantEntry.getEntryType()).isEqualTo(EntryType.CREDIT);
 
         LedgerEntry feeEntry = savedEntries.stream()
@@ -127,10 +127,10 @@ class LedgerServiceTest {
     @Test
     @DisplayName("Should record refund entries with balanced double-entry accounting")
     void recordRefund_ShouldCreateBalancedDoubleEntry() {
-        // Act
+
         ledgerService.recordRefund(refundEvent);
 
-        // Assert
+
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<LedgerEntry>> captor = ArgumentCaptor.forClass(List.class);
         verify(ledgerEntryRepository).saveAll(captor.capture());
@@ -164,14 +164,14 @@ class LedgerServiceTest {
     @Test
     @DisplayName("Should calculate merchant available balance algebraically")
     void getMerchantBalance_ShouldReturnAlgebraicBalance() {
-        // Arrange
+
         given(ledgerEntryRepository.calculateMerchantBalance("mch_test_99", true))
                 .willReturn(7700L);
 
-        // Act
+
         MerchantBalanceResponse response = ledgerService.getMerchantBalance("mch_test_99", true);
 
-        // Assert
+
         assertThat(response.merchantId()).isEqualTo("mch_test_99");
         assertThat(response.availableBalanceCents()).isEqualTo(7700L);
         assertThat(response.currency()).isEqualTo("EUR");
@@ -181,7 +181,7 @@ class LedgerServiceTest {
     @Test
     @DisplayName("Should return paginated ledger entry responses")
     void getMerchantEntries_ShouldReturnPaginatedList() {
-        // Arrange
+
         LedgerEntry entry = LedgerEntry.builder()
                 .id(UUID.randomUUID())
                 .entryId("led_100")
@@ -200,10 +200,10 @@ class LedgerServiceTest {
         given(ledgerEntryRepository.findByMerchantIdAndIsTestOrderByCreatedAtDesc(eq("mch_test_99"), eq(true), any()))
                 .willReturn(page);
 
-        // Act
+
         Page<LedgerEntryResponse> result = ledgerService.getMerchantEntries("mch_test_99", true, PageRequest.of(0, 10));
 
-        // Assert
+
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().getFirst().entryId()).isEqualTo("led_100");
         assertThat(result.getContent().getFirst().amountCents()).isEqualTo(9700L);

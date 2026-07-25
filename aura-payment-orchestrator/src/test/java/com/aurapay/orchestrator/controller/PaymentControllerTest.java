@@ -82,7 +82,7 @@ class PaymentControllerTest {
     void confirmPayment_Success() throws Exception {
         UUID intentId = UUID.randomUUID();
         UUID merchantId = UUID.randomUUID();
-        String validLuhnToken = "tok_4111111111111111"; // Valid Luhn test card number token
+        String validLuhnToken = "tok_4111111111111111";
         ConfirmPaymentIntentRequest request = new ConfirmPaymentIntentRequest(validLuhnToken);
 
         PaymentIntentResponse response = new PaymentIntentResponse(

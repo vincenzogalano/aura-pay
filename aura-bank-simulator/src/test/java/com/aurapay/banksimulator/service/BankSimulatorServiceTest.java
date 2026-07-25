@@ -28,7 +28,7 @@ class BankSimulatorServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new BankSimulatorService(eventPublisher, 0L); // 0ms latency for fast tests
+        service = new BankSimulatorService(eventPublisher, 0L);
     }
 
     @Test

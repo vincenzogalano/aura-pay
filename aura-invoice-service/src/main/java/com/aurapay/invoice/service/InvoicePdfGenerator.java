@@ -38,15 +38,13 @@ public class InvoicePdfGenerator {
             PDType1Font fontRegular = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
 
             try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
-                // Header
                 contentStream.beginText();
                 contentStream.setFont(fontBold, 20);
-                contentStream.setNonStrokingColor(new Color(26, 86, 219)); // Primary blue color
+                contentStream.setNonStrokingColor(new Color(26, 86, 219));
                 contentStream.newLineAtOffset(50, 750);
                 contentStream.showText("AuraPay - Payment Infrastructure");
                 contentStream.endText();
 
-                // Document Title
                 contentStream.beginText();
                 contentStream.setFont(fontBold, 16);
                 contentStream.setNonStrokingColor(new Color(0, 0, 0));
@@ -55,7 +53,6 @@ public class InvoicePdfGenerator {
                 contentStream.showText(docTitle);
                 contentStream.endText();
 
-                // Metadata details
                 int y = 675;
                 drawLabelValue(contentStream, fontBold, fontRegular, "Numero Documento:", invoice.getInvoiceNumber(), 50, y);
                 y -= 20;
@@ -74,7 +71,6 @@ public class InvoicePdfGenerator {
                     y -= 20;
                 }
 
-                // Divider line
                 contentStream.setStrokingColor(new Color(200, 200, 200));
                 contentStream.setLineWidth(1.0f);
                 contentStream.moveTo(50, y);
@@ -82,7 +78,6 @@ public class InvoicePdfGenerator {
                 contentStream.stroke();
                 y -= 30;
 
-                // Table Header
                 contentStream.beginText();
                 contentStream.setFont(fontBold, 12);
                 contentStream.setNonStrokingColor(new Color(0, 0, 0));
@@ -98,7 +93,6 @@ public class InvoicePdfGenerator {
                 contentStream.stroke();
                 y -= 25;
 
-                // Table Row
                 contentStream.beginText();
                 contentStream.setFont(fontRegular, 11);
                 contentStream.newLineAtOffset(50, y);
@@ -119,14 +113,12 @@ public class InvoicePdfGenerator {
                 contentStream.stroke();
                 y -= 30;
 
-                // Total Summary
                 contentStream.beginText();
                 contentStream.setFont(fontBold, 14);
                 contentStream.newLineAtOffset(300, y);
                 contentStream.showText("TOTALE: " + formattedAmount);
                 contentStream.endText();
 
-                // Footer
                 contentStream.beginText();
                 contentStream.setFont(fontRegular, 9);
                 contentStream.setNonStrokingColor(new Color(120, 120, 120));
@@ -134,14 +126,12 @@ public class InvoicePdfGenerator {
                 contentStream.showText("AuraPay Ltd - Microservice Event-Driven Architecture Platform. All rights reserved.");
                 contentStream.endText();
 
-                // Watermark for Test mode
                 if (Boolean.TRUE.equals(invoice.getIsTest())) {
                     contentStream.saveGraphicsState();
                     contentStream.beginText();
                     contentStream.setFont(fontBold, 38);
-                    contentStream.setNonStrokingColor(new Color(220, 50, 50)); // Red color for TEST watermark
+                    contentStream.setNonStrokingColor(new Color(220, 50, 50));
                     
-                    // Rotate and position watermark across center of page
                     Matrix matrix = Matrix.getRotateInstance(Math.toRadians(35), 100, 320);
                     contentStream.setTextMatrix(matrix);
                     contentStream.showText("TEST - NON FISCALMENTE VALIDO");

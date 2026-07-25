@@ -27,7 +27,6 @@ public class LedgerService {
 
     private final LedgerEntryRepository ledgerEntryRepository;
     private final LedgerEventPublisher ledgerEventPublisher;
-
     @Transactional
     public void recordPayment(PaymentSucceededEvent event) {
         log.info("Recording double-entry bookkeeping for payment: {} (merchant: {})",
@@ -100,7 +99,6 @@ public class LedgerService {
         log.info("Double-entry bookkeeping recorded for payment {}: Debits={} Credits={} (Net={}, Fee={})",
                 event.paymentIntentId(), grossAmount, netAmount + feeAmount, netAmount, feeAmount);
     }
-
     @Transactional
     public void recordRefund(RefundSucceededEvent event) {
         log.info("Recording double-entry bookkeeping for refund: {} (merchant: {})",
@@ -155,10 +153,9 @@ public class LedgerService {
         log.info("Double-entry bookkeeping recorded for refund {}: Debits={} Credits={}",
                 event.refundId(), refundAmount, refundAmount);
     }
-
     @Transactional(readOnly = true)
     public MerchantBalanceResponse getMerchantBalance(String merchantId, boolean isTest) {
-        long balance = ledgerEntryRepository.calculateMerchantBalance(merchantId, isTest);
+        long balance = ledgerEntryRepository.calculateMerchantBalance(merchantId, isTest, "EUR");
         return new MerchantBalanceResponse(
                 merchantId,
                 balance,
@@ -167,7 +164,6 @@ public class LedgerService {
                 Instant.now()
         );
     }
-
     @Transactional(readOnly = true)
     public Page<LedgerEntryResponse> getMerchantEntries(String merchantId, boolean isTest, Pageable pageable) {
         return ledgerEntryRepository.findByMerchantIdAndIsTestOrderByCreatedAtDesc(merchantId, isTest, pageable)

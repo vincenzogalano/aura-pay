@@ -11,29 +11,15 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.HexFormat;
-
-/**
- * AES-256 GCM authenticated encryption/decryption utility.
- * Prepends a randomly generated 12-byte IV to the encrypted ciphertext.
- */
 public final class AESCryptoUtils {
 
     private static final String AES_GCM = "AES/GCM/NoPadding";
-    private static final int GCM_IV_LENGTH = 12; // 96 bits
-    private static final int GCM_TAG_LENGTH = 128; // 128 bits
+    private static final int GCM_IV_LENGTH = 12;
+    private static final int GCM_TAG_LENGTH = 128;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private AESCryptoUtils() {
-        // Utility class
     }
-
-    /**
-     * Encrypts plaintext string using AES-256 GCM with a secret key string (Hex or Base64 or 32-byte key).
-     *
-     * @param plainText Plain text to encrypt.
-     * @param secretKey 32-byte secret key (or Hex representation of 32 bytes).
-     * @return Base64 encoded string containing [12-byte IV + Ciphertext].
-     */
     public static String encrypt(String plainText, String secretKey) {
         if (plainText == null || secretKey == null) {
             throw new CryptoException("Plaintext and secret key must not be null");
@@ -60,14 +46,6 @@ public final class AESCryptoUtils {
             throw new CryptoException("Encryption failed", e);
         }
     }
-
-    /**
-     * Decrypts Base64 payload [IV + Ciphertext] using AES-256 GCM.
-     *
-     * @param base64Encrypted Base64 encoded string containing [12-byte IV + Ciphertext].
-     * @param secretKey       Secret key used for encryption.
-     * @return Decrypted plaintext string.
-     */
     public static String decrypt(String base64Encrypted, String secretKey) {
         if (base64Encrypted == null || secretKey == null) {
             throw new CryptoException("Encrypted string and secret key must not be null");
@@ -98,23 +76,19 @@ public final class AESCryptoUtils {
             throw new CryptoException("Decryption failed", e);
         }
     }
-
     private static byte[] parseKey(String key) {
         byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
         if (keyBytes.length == 32) {
             return keyBytes;
         }
-        // Try hex decoding if string length is 64 hex characters
+        
         if (key.length() == 64) {
             try {
                 return HexFormat.of().parseHex(key);
             } catch (IllegalArgumentException ignored) {
-                // Fallback to padding/truncating below
             }
         }
-        // Pad or truncate to 32 bytes for AES-256
-        byte[] padded = new byte[32];
-        System.arraycopy(keyBytes, 0, padded, 0, Math.min(keyBytes.length, 32));
-        return padded;
+        
+        throw new CryptoException("Invalid key length: key must be exactly 256 bits (32 raw bytes or 64 hex characters).");
     }
 }

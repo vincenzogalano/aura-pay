@@ -61,13 +61,13 @@ class LedgerKafkaConsumerTest {
     @Test
     @DisplayName("Should process new event and delegate to LedgerService")
     void consumeEvent_NewEvent_ShouldProcessSuccessfully() {
-        // Arrange
+
         given(processedEventRepository.existsById("evt_unique_123")).willReturn(false);
 
-        // Act
+
         ledgerKafkaConsumer.consumeEvent(paymentJson);
 
-        // Assert
+
         verify(processedEventRepository).save(any());
         verify(ledgerService).recordPayment(any(PaymentSucceededEvent.class));
     }
@@ -75,13 +75,13 @@ class LedgerKafkaConsumerTest {
     @Test
     @DisplayName("Should skip processing duplicate event to enforce effectively-once idempotency")
     void consumeEvent_DuplicateEvent_ShouldSkipProcessing() {
-        // Arrange
+
         given(processedEventRepository.existsById("evt_unique_123")).willReturn(true);
 
-        // Act
+
         ledgerKafkaConsumer.consumeEvent(paymentJson);
 
-        // Assert
+
         verify(processedEventRepository, never()).save(any());
         verify(ledgerService, never()).recordPayment(any());
         verify(ledgerService, never()).recordRefund(any());

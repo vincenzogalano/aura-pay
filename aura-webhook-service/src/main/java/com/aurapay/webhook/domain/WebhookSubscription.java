@@ -31,7 +31,7 @@ public class WebhookSubscription {
     private boolean enabled;
 
     @Column(name = "subscribed_events", length = 1024)
-    private String subscribedEvents; // Comma-separated list of event types or wildcard "*"
+    private String subscribedEvents;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;

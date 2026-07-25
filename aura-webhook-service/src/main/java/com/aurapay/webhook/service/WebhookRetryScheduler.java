@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.Instant;
 import java.util.List;
@@ -22,7 +23,7 @@ public class WebhookRetryScheduler {
     @Scheduled(fixedDelayString = "${aurapay.webhook.retry-fixed-delay-ms:10000}")
     public void processPendingRetries() {
         Instant now = Instant.now();
-        List<WebhookDelivery> pendingDeliveries = deliveryRepository.findByStatusAndNextRetryAtBefore(DeliveryStatus.FAILED, now);
+        List<WebhookDelivery> pendingDeliveries = deliveryRepository.findByStatusAndNextRetryAtBefore(DeliveryStatus.FAILED, now, PageRequest.of(0, 50));
         if (!pendingDeliveries.isEmpty()) {
             log.info("WebhookRetryScheduler found {} pending retry deliveries to process", pendingDeliveries.size());
             for (WebhookDelivery delivery : pendingDeliveries) {

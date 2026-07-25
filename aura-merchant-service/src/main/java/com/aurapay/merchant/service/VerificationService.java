@@ -30,7 +30,6 @@ public class VerificationService {
             }
         }
 
-        // Validate Italian VAT Checksum if VAT has 11 digits
         String cleanedVat = vatNumber.replaceAll("[^0-9]", "");
         if (cleanedVat.length() == 11 && !isValidItalianVatChecksum(cleanedVat)) {
             return new VerificationResult(false, "Invalid VAT number checksum");

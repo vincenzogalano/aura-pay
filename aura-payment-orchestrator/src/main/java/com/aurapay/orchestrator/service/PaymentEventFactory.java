@@ -60,7 +60,7 @@ public class PaymentEventFactory {
 
     public OutboxEvent buildSucceededOutboxEvent(PaymentIntent intent, String cardLastFour) {
         String eventId = UUID.randomUUID().toString();
-        long feeCents = (intent.getAmountCents() * 15) / 1000; // Exact 1.5% fee calculation in integer cents
+        long feeCents = (intent.getAmountCents() * 15) / 1000;
         PaymentSucceededEvent event = new PaymentSucceededEvent(
                 eventId,
                 EventType.PAYMENT_SUCCEEDED.getTopicName(),

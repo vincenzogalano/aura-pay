@@ -44,7 +44,7 @@ public class WebhookDispatcherService {
         delivery.setAttemptCount(currentAttempt);
 
         long timestamp = Instant.now().getEpochSecond();
-        String signature = HmacUtils.calculateHmacSha256(delivery.getPayload(), secretKey);
+        String signature = HmacUtils.calculateHmacSha256(timestamp + "." + delivery.getPayload(), secretKey);
 
         log.info("Dispatching webhook attempt {}/{} for eventId={} merchantId={} targetUrl={}",
                 currentAttempt, delivery.getMaxAttempts(), delivery.getEventId(), delivery.getMerchantId(), delivery.getTargetUrl());
@@ -60,7 +60,7 @@ public class WebhookDispatcherService {
                     .body(delivery.getPayload())
                     .retrieve();
 
-            responseSpec.toBodilessEntity(); // Throws exception if status is 4xx or 5xx
+            responseSpec.toBodilessEntity();
 
             delivery.setHttpStatus(200);
             delivery.setResponseBody("OK");

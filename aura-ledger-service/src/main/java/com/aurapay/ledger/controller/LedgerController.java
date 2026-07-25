@@ -22,7 +22,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class LedgerController {
 
     private final LedgerService ledgerService;
-
     @GetMapping("/accounts/{merchantId}/balance")
     public ResponseEntity<MerchantBalanceResponse> getBalance(
             @PathVariable String merchantId,
@@ -32,7 +31,6 @@ public class LedgerController {
         MerchantBalanceResponse response = ledgerService.getMerchantBalance(merchantId, isTest);
         return ResponseEntity.ok(response);
     }
-
     @GetMapping("/entries/{merchantId}")
     public ResponseEntity<Page<LedgerEntryResponse>> getEntries(
             @PathVariable String merchantId,

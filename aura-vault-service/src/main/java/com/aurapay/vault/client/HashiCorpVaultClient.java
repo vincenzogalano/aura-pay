@@ -40,7 +40,6 @@ public class HashiCorpVaultClient {
         try {
             log.info("Checking HashiCorp Vault initialization...");
 
-            // Step 1: Try to enable transit engine, Vault returns 400 if already enabled
             try {
                 restClient.post()
                         .uri("/v1/sys/mounts/transit")
@@ -52,7 +51,6 @@ public class HashiCorpVaultClient {
                 log.debug("Transit Secrets Engine might already be enabled: {}", e.getMessage());
             }
 
-            // Step 2: Check if key exists, create if not
             boolean keyExists = false;
             try {
                 restClient.get()
@@ -80,9 +78,6 @@ public class HashiCorpVaultClient {
         }
     }
 
-    /**
-     * Encrypts plaintext string using Vault Transit.
-     */
     public String encrypt(String plainText) {
         if (plainText == null) {
             return null;
@@ -110,9 +105,6 @@ public class HashiCorpVaultClient {
         }
     }
 
-    /**
-     * Decrypts ciphertext string using Vault Transit.
-     */
     public String decrypt(String cipherText) {
         if (cipherText == null) {
             return null;

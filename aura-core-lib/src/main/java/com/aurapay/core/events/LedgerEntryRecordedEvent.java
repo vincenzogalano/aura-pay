@@ -8,7 +8,7 @@ public record LedgerEntryRecordedEvent(
         Instant occurredAt,
         String entryId,
         String merchantId,
-        String referenceType, // PAYMENT, REFUND, FEE
+        String referenceType,
         String referenceId,
         long amountCents,
         String debitAccount,

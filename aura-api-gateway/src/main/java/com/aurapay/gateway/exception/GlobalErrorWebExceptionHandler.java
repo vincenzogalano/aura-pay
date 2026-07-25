@@ -72,7 +72,7 @@ public class GlobalErrorWebExceptionHandler implements ErrorWebExceptionHandler 
         try {
             bytes = objectMapper.writeValueAsBytes(errorResponse);
         } catch (JsonProcessingException jpe) {
-            bytes = ("{\"error\":\"" + errorCode + "\",\"message\":\"" + message + "\"}").getBytes(StandardCharsets.UTF_8);
+            bytes = "{\"error\":\"Internal Server Error\",\"message\":\"An unexpected error occurred during error serialization.\"}".getBytes(StandardCharsets.UTF_8);
         }
 
         DataBuffer buffer = response.bufferFactory().wrap(bytes);

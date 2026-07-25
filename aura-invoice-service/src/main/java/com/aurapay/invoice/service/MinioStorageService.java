@@ -1,8 +1,11 @@
 package com.aurapay.invoice.service;
 
+import io.minio.BucketExistsArgs;
 import io.minio.GetObjectArgs;
+import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +23,21 @@ public class MinioStorageService {
 
     @Value("${aurapay.minio.bucket:aurapay-invoices}")
     private String bucketName;
+
+    @PostConstruct
+    public void initBucket() {
+        try {
+            boolean isExist = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
+            if (!isExist) {
+                minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
+                log.info("Bucket '{}' created successfully.", bucketName);
+            } else {
+                log.info("Bucket '{}' already exists.", bucketName);
+            }
+        } catch (Exception e) {
+            log.error("Error occurred while checking/creating bucket '{}': {}", bucketName, e.getMessage(), e);
+        }
+    }
 
     public void uploadPdf(String objectKey, byte[] pdfData) {
         try (ByteArrayInputStream inputStream = new ByteArrayInputStream(pdfData)) {

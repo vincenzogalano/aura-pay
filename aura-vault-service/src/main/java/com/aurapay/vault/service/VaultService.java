@@ -40,10 +40,6 @@ public class VaultService {
         this.tokenTtlMinutes = tokenTtlMinutes;
     }
 
-    /**
-     * Tokenizes a credit card: validates details, encrypts PAN & CVV via HashiCorp Vault,
-     * and persists card metadata to the database.
-     */
     @Transactional
     public TokenResponse tokenize(TokenizeRequest request, String authHeader) {
         log.info("Tokenizing card for cardholder '{}'", request.cardholderName());
@@ -53,24 +49,18 @@ public class VaultService {
             throw new BusinessException(AuraErrorCode.DOMAIN_RULE_VIOLATION, "Invalid card number (Luhn validation failed)");
         }
 
-        // Validate expiration date
         validateExpiration(request.expirationMonth(), request.expirationYear());
 
-        // Determine environment from API key prefix
         String apiKey = extractApiKey(authHeader);
         boolean isTest = apiKey.isEmpty() || ApiKeyGenerator.isTestKey(apiKey);
 
-        // Determine card brand
         CardBrand cardBrand = detectCardBrand(sanitizedPan);
 
-        // Mask PAN for safe database representation and response
         String maskedPan = CardMaskingUtils.maskPan(sanitizedPan);
 
-        // Encrypt sensitive fields via Vault Transit Engine
         String encryptedPan = vaultClient.encrypt(sanitizedPan);
         String encryptedCvv = vaultClient.encrypt(request.cvv());
 
-        // Generate token
         String token = ApiKeyGenerator.generateApiKey("tok_");
 
         Instant now = Instant.now();
@@ -107,10 +97,6 @@ public class VaultService {
         );
     }
 
-    /**
-     * Detokenizes a card: retrieves the token, checks expiration, decrypts PAN & CVV,
-     * and marks the token as used (single-use constraint).
-     */
     @Transactional
     public CardDetailsResponse retrieve(String token, String authHeader) {
         log.info("Retrieving card details for token '{}'", token);
@@ -126,18 +112,15 @@ public class VaultService {
             throw new BusinessException(AuraErrorCode.DOMAIN_RULE_VIOLATION, "Token has already been used");
         }
 
-        // Validate API Key environment matches token environment
         String apiKey = extractApiKey(authHeader);
         boolean keyIsTest = apiKey.isEmpty() || ApiKeyGenerator.isTestKey(apiKey);
         if (cardToken.isTest() != keyIsTest) {
             throw new BusinessException(AuraErrorCode.UNAUTHORIZED, "API Key environment does not match token environment");
         }
 
-        // Decrypt sensitive fields via Vault Transit Engine
         String decryptedPan = vaultClient.decrypt(cardToken.getEncryptedPan());
         String decryptedCvv = vaultClient.decrypt(cardToken.getEncryptedCvv());
 
-        // Mark token as used
         cardToken.setUsedAt(Instant.now());
         cardTokenRepository.save(cardToken);
 
@@ -155,10 +138,6 @@ public class VaultService {
         );
     }
 
-    /**
-     * Background scheduler that purges expired card tokens from database.
-     * Runs every minute.
-     */
     @Scheduled(fixedRate = 60000)
     @Transactional
     public void purgeExpiredTokens() {
@@ -167,7 +146,6 @@ public class VaultService {
     }
 
     private void validateExpiration(int month, int year) {
-        // Expiration year should be current or in the future
         LocalDate today = LocalDate.now();
         int currentYear = today.getYear();
         int currentMonth = today.getMonthValue();

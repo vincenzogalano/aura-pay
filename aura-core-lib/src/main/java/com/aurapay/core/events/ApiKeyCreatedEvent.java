@@ -9,7 +9,7 @@ public record ApiKeyCreatedEvent(
         String apiKeyId,
         String merchantId,
         String keyPrefix,
-        String environment, // TEST or LIVE
+        String environment,
         boolean isTest
 ) implements DomainEvent {
 

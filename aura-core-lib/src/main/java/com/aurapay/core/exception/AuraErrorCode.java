@@ -1,8 +1,4 @@
 package com.aurapay.core.exception;
-
-/**
- * Standardized error codes across AuraPay microservices.
- */
 public enum AuraErrorCode {
     RESOURCE_NOT_FOUND("RESOURCE_NOT_FOUND"),
     UNAUTHORIZED("UNAUTHORIZED"),

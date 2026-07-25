@@ -20,7 +20,7 @@ public interface WebhookDeliveryRepository extends JpaRepository<WebhookDelivery
 
     Page<WebhookDelivery> findByMerchantIdAndStatus(UUID merchantId, DeliveryStatus status, Pageable pageable);
 
-    List<WebhookDelivery> findByStatusAndNextRetryAtBefore(DeliveryStatus status, Instant now);
+    List<WebhookDelivery> findByStatusAndNextRetryAtBefore(DeliveryStatus status, Instant now, Pageable pageable);
 
     @Query("SELECT d FROM WebhookDelivery d WHERE d.merchantId = :merchantId AND d.createdAt BETWEEN :startTime AND :endTime")
     List<WebhookDelivery> findForReplay(

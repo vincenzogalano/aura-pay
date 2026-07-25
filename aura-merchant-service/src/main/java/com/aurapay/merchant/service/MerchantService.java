@@ -65,10 +65,8 @@ public class MerchantService {
         merchant = merchantRepository.save(merchant);
         log.info("Registered new merchant id={}, businessName={}", merchant.getId(), merchant.getBusinessName());
 
-        // Generate immediate TEST API Key Pair (pk_test_..., sk_test_...)
         List<RawApiKeyResponse> testKeys = generateAndSaveKeyPair(merchant.getId(), ApiKeyEnvironment.TEST);
 
-        // Publish events
         eventPublisher.publishMerchantCreated(
                 merchant.getId().toString(),
                 merchant.getBusinessName(),
@@ -98,7 +96,6 @@ public class MerchantService {
             merchantRepository.save(merchant);
             log.info("Merchant id={} successfully VERIFIED via KYB check", merchantId);
 
-            // Generate LIVE API keys
             List<RawApiKeyResponse> liveKeys = generateAndSaveKeyPair(merchantId, ApiKeyEnvironment.LIVE);
 
             eventPublisher.publishMerchantVerified(
@@ -167,7 +164,7 @@ public class MerchantService {
 
     @Transactional(readOnly = true)
     public List<ApiKeyResponse> getApiKeys(UUID merchantId) {
-        getMerchantEntity(merchantId); // check exists
+        getMerchantEntity(merchantId);
         return apiKeyRepository.findByMerchantId(merchantId)
                 .stream()
                 .map(ApiKeyResponse::fromEntity)

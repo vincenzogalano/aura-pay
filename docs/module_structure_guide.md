@@ -913,7 +913,6 @@ aura-invoice-service/
 
 ## 9. Convenzioni di Codice & Standard Ecosistema
 
-
 Tutti i microservizi dell'ecosistema AuraPay condividono una serie di convenzioni rigide ed immutabili garantite da audit automatici e test di regressione:
 
 ### 1. Nomenclatura e Pacchetti
@@ -922,22 +921,98 @@ Tutti i microservizi dell'ecosistema AuraPay condividono una serie di convenzion
 - **Controller & Service**: Classi con suffissi espliciti `Controller` e `Service`.
 
 ### 2. Header HTTP Centralizzati & Correlation ID
-- **Header Constants**: Definiti unicamente in `AuraHeaders` (`AUTHORIZATION`, `CORRELATION_ID`, `API_KEY`).
+- **Header Constants**: Definiti unicamente in `AuraHeaders` (`AUTHORIZATION`, `CORRELATION_ID`, `API_KEY`, `X_AURA_SIGNATURE`, `X_AURA_TIMESTAMP`).
 - **Tracciamento Distribuito**: Generazione del Correlation ID sul Gateway (`CorrelationIdFilter`) ed inoltro downstream nei client HTTP via `CorrelationIdInterceptor`.
 
-### 3. Gestione Errori Centralizzata
-- Ogni microservizio espone un `@RestControllerAdvice` (`GlobalExceptionHandler`) che traduce le eccezioni di dominio e di validazione (`@Valid`) nel DTO standard `ErrorResponse` della `aura-core-lib`.
+### 3. Gestione Errori Centralizzata & Privacy Policy
+- Ogni microservizio espone un `@RestControllerAdvice` (`GlobalExceptionHandler`) annotato con `@Component("<module>GlobalExceptionHandler")` tramite import esplicito `import org.springframework.stereotype.Component;`.
+- Le eccezioni generiche non gestite restituiscono un messaggio sicuro (`"An unexpected internal server error occurred"`) senza mai esporre `ex.getMessage()` o stack trace al client HTTP.
 
-### 4. Logging & Lingua
+### 4. Divieto di Wildcard Imports & Fully-Qualified Class Names (FQCN)
+- **Divieto Wildcard Imports**: Gli import con asterisco (`import package.*`) sono tassativamente vietati. Ogni dipendenza deve essere importata esplicitamente.
+- **Divieto FQCN Inline**: Notazioni estese (es. `com.aurapay...`) nel codice o nelle annotazioni sono vietate. In caso di collisione di nomi tra moduli, i componenti vanno rinominati in modo descrittivo (es. `HashiCorpVaultClient` vs `VaultServiceClient`).
+
+### 5. Costanti Centralizzate per Kafka Topic
+- I topic Kafka sono definiti unicamente nella classe `EventType.Topics` di `aura-core-lib` come costanti `public static final String` ed utilizzati uniformemente in tutti gli `@KafkaListener(topics = EventType.Topics.XYZ)`.
+
+### 6. Segregazione Transazionale DB e Chiamate HTTP (I/O)
+- Le chiamate di rete REST verso altri microservizi NON devono mai essere eseguite all'interno di metodi annotati con `@Transactional` per evitare la saturazione del pool di connessioni DB HikariCP.
+
+### 7. Matematica Finanziaria & Valute
+- Tutti gli importi monetari sono gestiti in centesimi interi (`long amountCents`). I calcoli percentuali usano aritmetica intera o `BigDecimal` (evitando virgola mobile `double` / `float`).
+
+### 8. Logging & Lingua
 - Uso esclusivo dell'annotazione Lombok **`@Slf4j`** per l'istanziazione dei logger.
 - Messaggi di log ed eccezioni scritti unicamente in **Inglese**.
 
-### 5. Configurazione Database & Spring Boot
+### 9. Configurazione Database & Spring Boot
 - **DDL & Schema**: Inizializzazione schema via `schema.sql` autoritativo e Hibernate DDL auto in modalità `validate`.
 - **Performance & Safety**: Disattivazione anti-pattern Open Session In View (`spring.jpa.open-in-view: false`) e limits definiti per il pool HikariCP (`maximum-pool-size: 10`).
 
-### 6. Containerizzazione & Isolamento Test
+### 10. Containerizzazione & Isolamento Test
 - **Docker**: `Dockerfile` multi-stage basato su `eclipse-temurin:21-jre-alpine` per tutti i microservizi.
 - **Test Suite**: Annotazione `@ActiveProfiles("test")` e `@TestPropertySource` su tutti i test per isolare il database H2 dalle variabili d'ambiente OS (`SPRING_DATASOURCE_URL`).
 
+---
+
+## 10. `aura-e2e-tests` (E2E Integration Testing & Polish Backend) — Sessione 10
+
+### Scopo del Modulo
+`aura-e2e-tests` è il modulo dedicato alla test suite di integrazione End-to-End dell'intero ecosistema backend AuraPay. Essa consolida tutti i microservizi (`aura-core-lib`, `aura-bank-simulator`, `aura-vault-service`, `aura-payment-orchestrator`, `aura-ledger-service`, `aura-merchant-service`, `aura-webhook-service`, `aura-invoice-service`) in un singolo contesto Spring Boot d'integrazione, fornendo:
+
+1. **Verifica Integrata End-to-End (`FullBackendE2EFlowTest`)**:
+   * **Onboarding Merchant**: Registrazione merchant e generazione automatica API key Sandbox (`pk_test_...`).
+   * **Verifica KYB & Token LIVE**: Valutazione KYB ed emissione chiavi LIVE (`pk_live_...`).
+   * **Tokenizzazione Vault**: Cifratura e generazione del token di carta temporaneo (`tok_...`) con validazione dell'algoritmo di Luhn e mascheramento PAN (`424242******4242`).
+   * **PaymentIntent Engine**: Creazione PaymentIntent (`CREATED`), detokenizzazione Vault, autorizzazione Bank Simulator (`tx_bank_e2e_full`) e transizione a `SUCCEEDED`.
+   * **Contabilità a Partita Doppia**: Registrazione automatica delle righe bilanciate in `aura-ledger-service` ($\sum \text{DEBIT} = \sum \text{CREDIT}$) e verifica saldo algebrico merchant.
+   * **Fatturazione PDF & MinIO**: Generazione PDF fattura (`INV-YYYY-XXXXXX`), caricamento S3 e Presigned URL protetto da firma HMAC.
+   * **Webhook HMAC-SHA256**: Generazione e validazione firma `X-Aura-Signature` con `HmacUtils`.
+
+2. **Test Suite Dedicate (18 casi di test con JUnit 5 & `@DisplayName`)**:
+   * `MerchantOnboardingE2ETest`: Verifica flusso registrazioni merchant, KYB e revoca API Key.
+   * `PaymentFlowAndVaultE2ETest`: Verifica tokenizzazione Vault, rifiuto Luhn, autorizzazione bancaria e gestione esiti Magic Rules.
+   * `LedgerAccountingE2ETest`: Verifica bilanciamento partita doppia e calcolo algebrico saldi TEST vs LIVE.
+   * `InvoiceGenerationAndMinIOE2ETest`: Generazione PDF fatture `INV-` e note di credito `CN-`, watermark Sandbox e presigned URL.
+   * `WebhookNotificationE2ETest`: Registrazione subscription webhook, firme HMAC-SHA256 e tracciamento `DeliveryStatus`.
+
+---
+
+### Struttura dei Pacchetti e dei File
+
+```
+aura-e2e-tests/
+├── pom.xml
+└── src/
+    └── test/
+        ├── java/com/aurapay/e2e/
+        │   ├── AuraE2ETestApplication.java               # Launcher Spring Boot per il contesto di test E2E
+        │   ├── FullBackendE2EFlowTest.java                # Test del flusso completo integrato (Step 1 -> 8)
+        │   ├── MerchantOnboardingE2ETest.java             # Test E2E Onboarding & KYB
+        │   ├── PaymentFlowAndVaultE2ETest.java            # Test E2E Vault & Payment Orchestration
+        │   ├── LedgerAccountingE2ETest.java               # Test E2E Partita Doppia & Saldo Algebrico
+        │   ├── InvoiceGenerationAndMinIOE2ETest.java      # Test E2E Fatturazione PDF & MinIO Presigned URL
+        │   └── WebhookNotificationE2ETest.java            # Test E2E Webhook Subscription & HMAC Signatures
+        └── resources/
+            └── application-test.yml                     # Proprieta' di isolamento H2 e mock per l'ambiente E2E
+```
+---
+
+## 11. `aura-frontend` (React Frontend Merchant Dashboard) — Sessione 11
+
+### Scopo del Modulo
+`aura-frontend` è l'applicazione Single Page Application (SPA) in **React 18 + TypeScript + Vite + Tailwind CSS** per la Merchant Dashboard di AuraPay. Essa fornisce:
+
+1. **Core Infrastructure & Design System**:
+   * **Sleek Dark Mode**: Palette tailored Slate-950 / Slate-900 con accenti Indigo, Cyan ed Emerald, font Google *Outfit* e utility glassmorphism (`backdrop-blur-md`, `border-slate-800/60`).
+   * **MerchantContext**: Gestione centralizzata del merchant attivo, token/header di autenticazione e selettore in tempo reale tra ambiente **Sandbox (TEST)** e **LIVE** con badge animati e notifiche toast Sonner.
+   * **Mock Fallback Engine**: Layer API Axios trasparente che attiva automaticamente una suite di mock data realistici in caso di assenza dei microservizi backend in locale, garantendo una visual preview interattiva impeccabile.
+
+2. **Moduli & Pagine della Dashboard**:
+   * **`Dashboard Overview` (`/dashboard`)**: KPI Cards in tempo reale (Saldo Disponibile da Ledger Service, Volume Totale, Commissioni Totali, Conteggio Transazioni), grafico ad area Recharts per i volumi e widget ultime transazioni.
+   * **`Onboarding & Profilo` (`/onboarding`, `/profile`)**: Form di registrazione self-service, generazione ed esibizione chiavi Sandbox (`sk_test_...`) e widget KYB Verification per sbloccare l'ambiente LIVE.
+   * **`Gestione API Keys` (`/api-keys`)**: Tabella chiavi attive separate per ambiente Sandbox e Live con masking parziale (`sk_test_••••••••`), copia negli appunti e revoca/generazione chiavi.
+   * **`Transazioni & Rimborsi` (`/transactions`)**: Tabella paginata con filtri per stato, range date e ricerca ID, Drawer con la timeline visiva degli eventi (`CREATED` -> `PROCESSING` -> `SUCCEEDED` / `FAILED` / `REFUNDED`) e Modal **"Esegui Rimborso"** per rimborsi totali e parziali con validazione del residuo.
+   * **`Fatture e Documenti Fiscali` (`/invoices`)**: Tabella fatture emesse (`INV-`) e note di credito (`CN-`), watermark Sandbox "TEST" e download sicuro PDF via Presigned URL temporaneo S3 MinIO (`GET /v1/invoices/{id}/download-url`).
+   * **`Webhook & Consegne` (`/webhooks`)**: Configurazione Target URL ed eventi sottoscritti, secret HMAC-SHA256, registro consegne con codice HTTP e stato (`SUCCESS`, `PENDING`, `DEAD_LETTER`) e pulsante **"Invia Replay Manuale"**.
 

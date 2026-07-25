@@ -1,9 +1,4 @@
 package com.aurapay.core.enums;
-
-/**
- * Enumeration of all domain aggregate types across the AuraPay ecosystem.
- * Used by Transactional Outbox pattern and Debezium CDC routing.
- */
 public enum AggregateType {
 
     PAYMENT_INTENT("PaymentIntent"),

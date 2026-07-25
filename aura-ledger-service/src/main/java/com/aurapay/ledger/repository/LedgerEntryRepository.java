@@ -16,8 +16,8 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
 
     @Query("SELECT COALESCE(SUM(CASE WHEN e.entryType = 'CREDIT' THEN e.amountCents ELSE -e.amountCents END), 0) " +
            "FROM LedgerEntry e " +
-           "WHERE e.merchantId = :merchantId AND e.accountType = 'MERCHANT_AVAILABLE' AND e.isTest = :isTest")
-    long calculateMerchantBalance(@Param("merchantId") String merchantId, @Param("isTest") boolean isTest);
+           "WHERE e.merchantId = :merchantId AND e.accountType = 'MERCHANT_AVAILABLE' AND e.isTest = :isTest AND e.currency = :currency")
+    long calculateMerchantBalance(@Param("merchantId") String merchantId, @Param("isTest") boolean isTest, @Param("currency") String currency);
 
     Page<LedgerEntry> findByMerchantIdAndIsTestOrderByCreatedAtDesc(String merchantId, boolean isTest, Pageable pageable);
 

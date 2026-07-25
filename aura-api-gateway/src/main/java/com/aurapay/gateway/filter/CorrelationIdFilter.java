@@ -15,7 +15,6 @@ import java.util.UUID;
 public class CorrelationIdFilter implements WebFilter, Ordered {
 
     public static final String CORRELATION_ID_HEADER = AuraHeaders.CORRELATION_ID;
-
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();

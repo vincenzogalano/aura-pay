@@ -56,7 +56,6 @@ public class InvoiceService {
         UUID merchantUuid = UUID.fromString(event.merchantId());
         UUID paymentIntentUuid = UUID.fromString(event.paymentIntentId());
 
-        // Idempotency check
         Optional<Invoice> existing = invoiceRepository.findByPaymentIntentIdAndInvoiceType(
                 paymentIntentUuid, InvoiceType.INVOICE);
         if (existing.isPresent()) {
@@ -83,16 +82,12 @@ public class InvoiceService {
                 .build();
 
         try {
-            // Generate PDF
             byte[] pdfBytes = pdfGenerator.generatePdf(invoice);
 
-            // Upload PDF to MinIO
             storageService.uploadPdf(objectKey, pdfBytes);
 
-            // Save Invoice metadata
             invoice = invoiceRepository.save(invoice);
 
-            // Publish InvoiceGeneratedEvent
             InvoiceGeneratedEvent generatedEvent = new InvoiceGeneratedEvent(
                     "evt_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12),
                     "invoice.generated",
@@ -137,7 +132,6 @@ public class InvoiceService {
         UUID refundUuid = UUID.fromString(event.refundId());
         UUID paymentIntentUuid = event.paymentIntentId() != null ? UUID.fromString(event.paymentIntentId()) : null;
 
-        // Idempotency check
         Optional<Invoice> existing = invoiceRepository.findByRefundIdAndInvoiceType(
                 refundUuid, InvoiceType.CREDIT_NOTE);
         if (existing.isPresent()) {
@@ -165,16 +159,12 @@ public class InvoiceService {
                 .build();
 
         try {
-            // Generate PDF
             byte[] pdfBytes = pdfGenerator.generatePdf(invoice);
 
-            // Upload PDF to MinIO
             storageService.uploadPdf(objectKey, pdfBytes);
 
-            // Save metadata
             invoice = invoiceRepository.save(invoice);
 
-            // Publish InvoiceGeneratedEvent
             InvoiceGeneratedEvent generatedEvent = new InvoiceGeneratedEvent(
                     "evt_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12),
                     "invoice.generated",

@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class AESCryptoUtilsTest {
 
-    private final String secretKey = "01234567890123456789012345678901"; // 32 bytes
+    private final String secretKey = "01234567890123456789012345678901";
     private final String plainText = "Sensitive-PAN-4532015899001111";
 
     @Test
