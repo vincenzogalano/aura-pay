@@ -44,7 +44,6 @@ class LedgerControllerTest {
         );
         given(ledgerService.getMerchantBalance("mch_001", true)).willReturn(response);
 
-& Assert
         mockMvc.perform(get("/v1/ledger/accounts/mch_001/balance")
                         .param("isTest", "true"))
                 .andExpect(status().isOk())
@@ -74,7 +73,6 @@ class LedgerControllerTest {
 
         given(ledgerService.getMerchantEntries(eq("mch_001"), eq(true), any())).willReturn(page);
 
-& Assert
         mockMvc.perform(get("/v1/ledger/entries/mch_001")
                         .param("isTest", "true")
                         .param("page", "0")
