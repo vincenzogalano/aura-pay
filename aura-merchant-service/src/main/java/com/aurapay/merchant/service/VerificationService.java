@@ -1,6 +1,6 @@
 package com.aurapay.merchant.service;
 
-import com.aurapay.merchant.dto.request.VerificationRequestDto;
+import com.aurapay.merchant.dto.request.VerificationRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
@@ -14,12 +14,12 @@ public class VerificationService {
 
     public record VerificationResult(boolean approved, String reason) {}
 
-    public VerificationResult evaluateVerification(String vatNumber, String email, VerificationRequestDto request) {
+    public VerificationResult evaluateVerification(String vatNumber, String email, VerificationRequest request) {
         if (vatNumber == null || vatNumber.trim().length() < 8) {
             return new VerificationResult(false, "VAT number length must be at least 8 characters");
         }
 
-        if (request == null || request.getRegistrationNumber() == null || request.getRegistrationNumber().isBlank()) {
+        if (request == null || request.registrationNumber() == null || request.registrationNumber().isBlank()) {
             return new VerificationResult(false, "Company registration number is required for KYB verification");
         }
 

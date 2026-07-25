@@ -7,7 +7,7 @@ import com.aurapay.merchant.domain.Merchant;
 import com.aurapay.merchant.domain.enums.ApiKeyEnvironment;
 import com.aurapay.merchant.domain.enums.MerchantStatus;
 import com.aurapay.merchant.dto.request.RegisterMerchantRequest;
-import com.aurapay.merchant.dto.request.VerificationRequestDto;
+import com.aurapay.merchant.dto.request.VerificationRequest;
 import com.aurapay.merchant.dto.response.ApiKeyResponse;
 import com.aurapay.merchant.dto.response.RegisterMerchantResponse;
 import com.aurapay.merchant.dto.response.VerificationStatusResponse;
@@ -19,14 +19,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -79,24 +77,24 @@ class MerchantServiceTest {
     @Test
     @DisplayName("Registrazione merchant con successo genera chiavi TEST ed invia evento Kafka")
     void registerMerchant_success() {
-        RegisterMerchantRequest request = RegisterMerchantRequest.builder()
-                .businessName("Acme Corp")
-                .vatNumber("12345678901")
-                .email("info@acme.com")
-                .build();
+        RegisterMerchantRequest request = new RegisterMerchantRequest(
+                "Acme Corp",
+                "12345678901",
+                "info@acme.com"
+        );
 
-        given(merchantRepository.existsByVatNumber(request.getVatNumber())).willReturn(false);
-        given(merchantRepository.existsByEmail(request.getEmail())).willReturn(false);
+        given(merchantRepository.existsByVatNumber(request.vatNumber())).willReturn(false);
+        given(merchantRepository.existsByEmail(request.email())).willReturn(false);
         given(merchantRepository.save(any(Merchant.class))).willAnswer(invocation -> invocation.getArgument(0));
 
         RegisterMerchantResponse response = merchantService.registerMerchant(request);
 
         assertThat(response).isNotNull();
-        assertThat(response.getMerchant().getBusinessName()).isEqualTo("Acme Corp");
-        assertThat(response.getMerchant().getStatus()).isEqualTo(MerchantStatus.PENDING_VERIFICATION);
-        assertThat(response.getTestApiKeys()).hasSize(2);
-        assertThat(response.getTestApiKeys().get(0).getKeyPrefix()).startsWith("pk_test_");
-        assertThat(response.getTestApiKeys().get(1).getKeyPrefix()).startsWith("sk_test_");
+        assertThat(response.merchant().businessName()).isEqualTo("Acme Corp");
+        assertThat(response.merchant().status()).isEqualTo(MerchantStatus.PENDING_VERIFICATION);
+        assertThat(response.testApiKeys()).hasSize(2);
+        assertThat(response.testApiKeys().get(0).keyPrefix()).startsWith("pk_test_");
+        assertThat(response.testApiKeys().get(1).keyPrefix()).startsWith("sk_test_");
 
         verify(eventPublisher).publishMerchantCreated(any(), eq("Acme Corp"), eq("12345678901"), eq("info@acme.com"));
         verify(apiKeyRepository, times(2)).save(any(ApiKey.class));
@@ -105,13 +103,13 @@ class MerchantServiceTest {
     @Test
     @DisplayName("Registrazione fallisce con eccezione se la P.IVA è già registrata")
     void registerMerchant_duplicateVat_throwsException() {
-        RegisterMerchantRequest request = RegisterMerchantRequest.builder()
-                .businessName("Acme Corp")
-                .vatNumber("12345678901")
-                .email("info@acme.com")
-                .build();
+        RegisterMerchantRequest request = new RegisterMerchantRequest(
+                "Acme Corp",
+                "12345678901",
+                "info@acme.com"
+        );
 
-        given(merchantRepository.existsByVatNumber(request.getVatNumber())).willReturn(true);
+        given(merchantRepository.existsByVatNumber(request.vatNumber())).willReturn(true);
 
         assertThatThrownBy(() -> merchantService.registerMerchant(request))
                 .isInstanceOf(DomainRuleViolationException.class)
@@ -121,11 +119,11 @@ class MerchantServiceTest {
     @Test
     @DisplayName("Verifica KYB approvata sblocca stato VERIFIED e genera chiavi LIVE")
     void requestVerification_approved_unlocksVerifiedAndLiveKeys() {
-        VerificationRequestDto req = VerificationRequestDto.builder()
-                .registrationNumber("REG123")
-                .businessAddress("Via Roma 1")
-                .legalRepresentative("Mario Rossi")
-                .build();
+        VerificationRequest req = new VerificationRequest(
+                "REG123",
+                "Via Roma 1",
+                "Mario Rossi"
+        );
 
         given(merchantRepository.findById(merchantId)).willReturn(Optional.of(merchant));
         given(verificationService.evaluateVerification(eq("12345678901"), eq("info@acme.com"), any()))
@@ -133,9 +131,9 @@ class MerchantServiceTest {
 
         VerificationStatusResponse response = merchantService.requestVerification(merchantId, req);
 
-        assertThat(response.getStatus()).isEqualTo(MerchantStatus.VERIFIED);
-        assertThat(response.getLiveApiKeys()).hasSize(2);
-        assertThat(response.getLiveApiKeys().get(0).getKeyPrefix()).startsWith("pk_live_");
+        assertThat(response.status()).isEqualTo(MerchantStatus.VERIFIED);
+        assertThat(response.liveApiKeys()).hasSize(2);
+        assertThat(response.liveApiKeys().get(0).keyPrefix()).startsWith("pk_live_");
 
         verify(eventPublisher).publishMerchantVerified(eq(merchantId.toString()), eq("Acme Corp"), eq("12345678901"));
     }
@@ -143,11 +141,11 @@ class MerchantServiceTest {
     @Test
     @DisplayName("Verifica KYB respinta imposta stato VERIFICATION_REJECTED ed invia evento di rifiuto")
     void requestVerification_rejected_setsRejectedStatus() {
-        VerificationRequestDto req = VerificationRequestDto.builder()
-                .registrationNumber("REG123")
-                .businessAddress("Via Roma 1")
-                .legalRepresentative("Mario Rossi")
-                .build();
+        VerificationRequest req = new VerificationRequest(
+                "REG123",
+                "Via Roma 1",
+                "Mario Rossi"
+        );
 
         given(merchantRepository.findById(merchantId)).willReturn(Optional.of(merchant));
         given(verificationService.evaluateVerification(eq("12345678901"), eq("info@acme.com"), any()))
@@ -155,8 +153,8 @@ class MerchantServiceTest {
 
         VerificationStatusResponse response = merchantService.requestVerification(merchantId, req);
 
-        assertThat(response.getStatus()).isEqualTo(MerchantStatus.VERIFICATION_REJECTED);
-        assertThat(response.getLiveApiKeys()).isEmpty();
+        assertThat(response.status()).isEqualTo(MerchantStatus.VERIFICATION_REJECTED);
+        assertThat(response.liveApiKeys()).isEmpty();
 
         verify(eventPublisher).publishMerchantVerificationRejected(eq(merchantId.toString()), eq("Generic email rejected"));
     }
@@ -178,8 +176,8 @@ class MerchantServiceTest {
 
         ApiKeyResponse response = merchantService.revokeApiKey(merchantId, keyId);
 
-        assertThat(response.isActive()).isFalse();
-        assertThat(response.getRevokedAt()).isNotNull();
+        assertThat(response.active()).isFalse();
+        assertThat(response.revokedAt()).isNotNull();
 
         verify(eventPublisher).publishApiKeyRevoked(eq(keyId.toString()), eq(merchantId.toString()), eq("pk_test_"), eq(true));
     }

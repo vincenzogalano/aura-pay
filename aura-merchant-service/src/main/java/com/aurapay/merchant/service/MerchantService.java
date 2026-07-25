@@ -9,8 +9,17 @@ import com.aurapay.merchant.domain.MerchantWebhookConfig;
 import com.aurapay.merchant.domain.enums.ApiKeyEnvironment;
 import com.aurapay.merchant.domain.enums.ApiKeyType;
 import com.aurapay.merchant.domain.enums.MerchantStatus;
-import com.aurapay.merchant.dto.request.*;
-import com.aurapay.merchant.dto.response.*;
+import com.aurapay.merchant.dto.request.CreateApiKeyRequest;
+import com.aurapay.merchant.dto.request.RegisterMerchantRequest;
+import com.aurapay.merchant.dto.request.UpdateMerchantRequest;
+import com.aurapay.merchant.dto.request.VerificationRequest;
+import com.aurapay.merchant.dto.request.WebhookConfigRequest;
+import com.aurapay.merchant.dto.response.ApiKeyResponse;
+import com.aurapay.merchant.dto.response.MerchantResponse;
+import com.aurapay.merchant.dto.response.RawApiKeyResponse;
+import com.aurapay.merchant.dto.response.RegisterMerchantResponse;
+import com.aurapay.merchant.dto.response.VerificationStatusResponse;
+import com.aurapay.merchant.dto.response.WebhookConfigResponse;
 import com.aurapay.merchant.publisher.MerchantEventPublisher;
 import com.aurapay.merchant.repository.ApiKeyRepository;
 import com.aurapay.merchant.repository.MerchantRepository;
@@ -38,18 +47,18 @@ public class MerchantService {
 
     @Transactional
     public RegisterMerchantResponse registerMerchant(RegisterMerchantRequest request) {
-        if (merchantRepository.existsByVatNumber(request.getVatNumber())) {
-            throw new DomainRuleViolationException("A merchant with VAT number '" + request.getVatNumber() + "' already exists");
+        if (merchantRepository.existsByVatNumber(request.vatNumber())) {
+            throw new DomainRuleViolationException("A merchant with VAT number '" + request.vatNumber() + "' already exists");
         }
-        if (merchantRepository.existsByEmail(request.getEmail())) {
-            throw new DomainRuleViolationException("A merchant with email '" + request.getEmail() + "' already exists");
+        if (merchantRepository.existsByEmail(request.email())) {
+            throw new DomainRuleViolationException("A merchant with email '" + request.email() + "' already exists");
         }
 
         Merchant merchant = Merchant.builder()
                 .id(UUID.randomUUID())
-                .businessName(request.getBusinessName())
-                .vatNumber(request.getVatNumber())
-                .email(request.getEmail())
+                .businessName(request.businessName())
+                .vatNumber(request.vatNumber())
+                .email(request.email())
                 .status(MerchantStatus.PENDING_VERIFICATION)
                 .build();
 
@@ -57,7 +66,7 @@ public class MerchantService {
         log.info("Registered new merchant id={}, businessName={}", merchant.getId(), merchant.getBusinessName());
 
         // Generate immediate TEST API Key Pair (pk_test_..., sk_test_...)
-        List<RawApiKeyDto> testKeys = generateAndSaveKeyPair(merchant.getId(), ApiKeyEnvironment.TEST);
+        List<RawApiKeyResponse> testKeys = generateAndSaveKeyPair(merchant.getId(), ApiKeyEnvironment.TEST);
 
         // Publish events
         eventPublisher.publishMerchantCreated(
@@ -67,15 +76,15 @@ public class MerchantService {
                 merchant.getEmail()
         );
 
-        return RegisterMerchantResponse.builder()
-                .merchant(MerchantResponse.fromEntity(merchant))
-                .testApiKeys(testKeys)
-                .message("Merchant registered successfully. TEST API keys generated.")
-                .build();
+        return new RegisterMerchantResponse(
+                MerchantResponse.fromEntity(merchant),
+                testKeys,
+                "Merchant registered successfully. TEST API keys generated."
+        );
     }
 
     @Transactional
-    public VerificationStatusResponse requestVerification(UUID merchantId, VerificationRequestDto request) {
+    public VerificationStatusResponse requestVerification(UUID merchantId, VerificationRequest request) {
         Merchant merchant = getMerchantEntity(merchantId);
 
         VerificationService.VerificationResult result = verificationService.evaluateVerification(
@@ -90,7 +99,7 @@ public class MerchantService {
             log.info("Merchant id={} successfully VERIFIED via KYB check", merchantId);
 
             // Generate LIVE API keys
-            List<RawApiKeyDto> liveKeys = generateAndSaveKeyPair(merchantId, ApiKeyEnvironment.LIVE);
+            List<RawApiKeyResponse> liveKeys = generateAndSaveKeyPair(merchantId, ApiKeyEnvironment.LIVE);
 
             eventPublisher.publishMerchantVerified(
                     merchantId.toString(),
@@ -98,12 +107,12 @@ public class MerchantService {
                     merchant.getVatNumber()
             );
 
-            return VerificationStatusResponse.builder()
-                    .merchantId(merchantId)
-                    .status(MerchantStatus.VERIFIED)
-                    .details(result.reason())
-                    .liveApiKeys(liveKeys)
-                    .build();
+            return new VerificationStatusResponse(
+                    merchantId,
+                    MerchantStatus.VERIFIED,
+                    result.reason(),
+                    liveKeys
+            );
         } else {
             merchant.setStatus(MerchantStatus.VERIFICATION_REJECTED);
             merchantRepository.save(merchant);
@@ -111,12 +120,12 @@ public class MerchantService {
 
             eventPublisher.publishMerchantVerificationRejected(merchantId.toString(), result.reason());
 
-            return VerificationStatusResponse.builder()
-                    .merchantId(merchantId)
-                    .status(MerchantStatus.VERIFICATION_REJECTED)
-                    .details(result.reason())
-                    .liveApiKeys(List.of())
-                    .build();
+            return new VerificationStatusResponse(
+                    merchantId,
+                    MerchantStatus.VERIFICATION_REJECTED,
+                    result.reason(),
+                    List.of()
+            );
         }
     }
 
@@ -128,8 +137,8 @@ public class MerchantService {
     @Transactional
     public MerchantResponse updateMerchant(UUID merchantId, UpdateMerchantRequest request) {
         Merchant merchant = getMerchantEntity(merchantId);
-        merchant.setBusinessName(request.getBusinessName());
-        merchant.setEmail(request.getEmail());
+        merchant.setBusinessName(request.businessName());
+        merchant.setEmail(request.email());
         merchant = merchantRepository.save(merchant);
         return MerchantResponse.fromEntity(merchant);
     }
@@ -137,23 +146,23 @@ public class MerchantService {
     @Transactional(readOnly = true)
     public VerificationStatusResponse getVerificationStatus(UUID merchantId) {
         Merchant merchant = getMerchantEntity(merchantId);
-        return VerificationStatusResponse.builder()
-                .merchantId(merchantId)
-                .status(merchant.getStatus())
-                .details("Current merchant status is " + merchant.getStatus())
-                .liveApiKeys(List.of())
-                .build();
+        return new VerificationStatusResponse(
+                merchantId,
+                merchant.getStatus(),
+                "Current merchant status is " + merchant.getStatus(),
+                List.of()
+        );
     }
 
     @Transactional
-    public List<RawApiKeyDto> createApiKeyPair(UUID merchantId, CreateApiKeyRequest request) {
+    public List<RawApiKeyResponse> createApiKeyPair(UUID merchantId, CreateApiKeyRequest request) {
         Merchant merchant = getMerchantEntity(merchantId);
 
-        if (request.getEnvironment() == ApiKeyEnvironment.LIVE && merchant.getStatus() != MerchantStatus.VERIFIED) {
+        if (request.environment() == ApiKeyEnvironment.LIVE && merchant.getStatus() != MerchantStatus.VERIFIED) {
             throw new DomainRuleViolationException("Cannot generate LIVE API keys for a merchant that is not VERIFIED (current status: " + merchant.getStatus() + ")");
         }
 
-        return generateAndSaveKeyPair(merchantId, request.getEnvironment());
+        return generateAndSaveKeyPair(merchantId, request.environment());
     }
 
     @Transactional(readOnly = true)
@@ -203,9 +212,9 @@ public class MerchantService {
                         .secretKey("whsec_" + UUID.randomUUID().toString().replace("-", ""))
                         .build());
 
-        config.setTargetUrl(request.getTargetUrl());
-        if (request.getEnabled() != null) {
-            config.setEnabled(request.getEnabled());
+        config.setTargetUrl(request.targetUrl());
+        if (request.enabled() != null) {
+            config.setEnabled(request.enabled());
         } else {
             config.setEnabled(true);
         }
@@ -229,7 +238,7 @@ public class MerchantService {
                 .orElseThrow(() -> new ResourceNotFoundException("Merchant with id '" + merchantId + "' was not found"));
     }
 
-    private List<RawApiKeyDto> generateAndSaveKeyPair(UUID merchantId, ApiKeyEnvironment environment) {
+    private List<RawApiKeyResponse> generateAndSaveKeyPair(UUID merchantId, ApiKeyEnvironment environment) {
         String pkPrefix = environment == ApiKeyEnvironment.TEST ? ApiKeyGenerator.PK_TEST_PREFIX : ApiKeyGenerator.PK_LIVE_PREFIX;
         String skPrefix = environment == ApiKeyEnvironment.TEST ? ApiKeyGenerator.SK_TEST_PREFIX : ApiKeyGenerator.SK_LIVE_PREFIX;
 
@@ -263,22 +272,22 @@ public class MerchantService {
         eventPublisher.publishApiKeyCreated(pkEntity.getId().toString(), merchantId.toString(), pkPrefix, environment.name(), environment == ApiKeyEnvironment.TEST);
         eventPublisher.publishApiKeyCreated(skEntity.getId().toString(), merchantId.toString(), skPrefix, environment.name(), environment == ApiKeyEnvironment.TEST);
 
-        List<RawApiKeyDto> result = new ArrayList<>();
-        result.add(RawApiKeyDto.builder()
-                .id(pkEntity.getId())
-                .environment(environment)
-                .keyType(ApiKeyType.PUBLIC)
-                .keyPrefix(pkPrefix)
-                .rawKey(rawPk)
-                .build());
+        List<RawApiKeyResponse> result = new ArrayList<>();
+        result.add(new RawApiKeyResponse(
+                pkEntity.getId(),
+                environment,
+                ApiKeyType.PUBLIC,
+                pkPrefix,
+                rawPk
+        ));
 
-        result.add(RawApiKeyDto.builder()
-                .id(skEntity.getId())
-                .environment(environment)
-                .keyType(ApiKeyType.SECRET)
-                .keyPrefix(skPrefix)
-                .rawKey(rawSk)
-                .build());
+        result.add(new RawApiKeyResponse(
+                skEntity.getId(),
+                environment,
+                ApiKeyType.SECRET,
+                skPrefix,
+                rawSk
+        ));
 
         return result;
     }

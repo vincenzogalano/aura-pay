@@ -10,9 +10,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
@@ -35,34 +35,34 @@ class MerchantControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private MerchantService merchantService;
 
     @Test
     @DisplayName("POST /v1/merchants/register restituisce 201 CREATED e payload di registrazione")
     void registerMerchant_returns201Created() throws Exception {
-        RegisterMerchantRequest request = RegisterMerchantRequest.builder()
-                .businessName("Test Store")
-                .vatNumber("12345678901")
-                .email("test@store.com")
-                .build();
+        RegisterMerchantRequest request = new RegisterMerchantRequest(
+                "Test Store",
+                "12345678901",
+                "test@store.com"
+        );
 
         UUID merchantId = UUID.randomUUID();
-        MerchantResponse merchantResponse = MerchantResponse.builder()
-                .id(merchantId)
-                .businessName("Test Store")
-                .vatNumber("12345678901")
-                .email("test@store.com")
-                .status(MerchantStatus.PENDING_VERIFICATION)
-                .createdAt(Instant.now())
-                .updatedAt(Instant.now())
-                .build();
+        MerchantResponse merchantResponse = new MerchantResponse(
+                merchantId,
+                "Test Store",
+                "12345678901",
+                "test@store.com",
+                MerchantStatus.PENDING_VERIFICATION,
+                Instant.now(),
+                Instant.now()
+        );
 
-        RegisterMerchantResponse registerResponse = RegisterMerchantResponse.builder()
-                .merchant(merchantResponse)
-                .testApiKeys(List.of())
-                .message("Merchant registered successfully.")
-                .build();
+        RegisterMerchantResponse registerResponse = new RegisterMerchantResponse(
+                merchantResponse,
+                List.of(),
+                "Merchant registered successfully."
+        );
 
         given(merchantService.registerMerchant(any())).willReturn(registerResponse);
 

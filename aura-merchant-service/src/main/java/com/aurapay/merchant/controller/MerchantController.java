@@ -28,7 +28,7 @@ public class MerchantController {
     @PostMapping("/{id}/verification-request")
     public ResponseEntity<VerificationStatusResponse> requestVerification(
             @PathVariable("id") UUID merchantId,
-            @Valid @RequestBody VerificationRequestDto request) {
+            @Valid @RequestBody VerificationRequest request) {
         VerificationStatusResponse response = merchantService.requestVerification(merchantId, request);
         return ResponseEntity.ok(response);
     }
@@ -54,10 +54,10 @@ public class MerchantController {
     }
 
     @PostMapping("/{id}/api-keys")
-    public ResponseEntity<List<RawApiKeyDto>> createApiKeyPair(
+    public ResponseEntity<List<RawApiKeyResponse>> createApiKeyPair(
             @PathVariable("id") UUID merchantId,
             @Valid @RequestBody CreateApiKeyRequest request) {
-        List<RawApiKeyDto> keys = merchantService.createApiKeyPair(merchantId, request);
+        List<RawApiKeyResponse> keys = merchantService.createApiKeyPair(merchantId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(keys);
     }
 
