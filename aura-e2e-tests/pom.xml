@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.aurapay</groupId>
+        <artifactId>aurapay-parent</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>aura-e2e-tests</artifactId>
+    <name>AuraPay E2E Tests</name>
+    <description>End-to-End Integration Test Suite for AuraPay Ecosystem</description>
+
+    <dependencies>
+        <!-- Internal Microservices -->
+        <dependency>
+            <groupId>com.aurapay</groupId>
+            <artifactId>aura-core-lib</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.aurapay</groupId>
+            <artifactId>aura-merchant-service</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.aurapay</groupId>
+            <artifactId>aura-payment-orchestrator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.aurapay</groupId>
+            <artifactId>aura-vault-service</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.aurapay</groupId>
+            <artifactId>aura-bank-simulator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.aurapay</groupId>
+            <artifactId>aura-ledger-service</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.aurapay</groupId>
+            <artifactId>aura-webhook-service</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.aurapay</groupId>
+            <artifactId>aura-invoice-service</artifactId>
+        </dependency>
+
+        <!-- Testing & Database -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- PDF Box for Invoice verification -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>3.0.3</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+</project>
