@@ -165,7 +165,7 @@ class LedgerServiceTest {
     @DisplayName("Should calculate merchant available balance algebraically")
     void getMerchantBalance_ShouldReturnAlgebraicBalance() {
 
-        given(ledgerEntryRepository.calculateMerchantBalance("mch_test_99", true))
+        given(ledgerEntryRepository.calculateMerchantBalance("mch_test_99", true, "EUR"))
                 .willReturn(7700L);
 
 
