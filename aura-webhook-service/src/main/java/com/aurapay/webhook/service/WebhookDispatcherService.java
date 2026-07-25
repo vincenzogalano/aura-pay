@@ -1,5 +1,6 @@
 package com.aurapay.webhook.service;
 
+import com.aurapay.core.constants.AuraHeaders;
 import com.aurapay.core.security.HmacUtils;
 import com.aurapay.webhook.domain.WebhookDelivery;
 import com.aurapay.webhook.domain.WebhookSubscription;
@@ -10,9 +11,9 @@ import com.aurapay.webhook.repository.WebhookSubscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClient;
 
 import java.time.Instant;
@@ -52,7 +53,7 @@ public class WebhookDispatcherService {
             var responseSpec = restClient.post()
                     .uri(delivery.getTargetUrl())
                     .contentType(MediaType.APPLICATION_JSON)
-                    .header("X-Aura-Signature", signature)
+                    .header(AuraHeaders.X_AURA_SIGNATURE, signature)
                     .header("X-Aura-Timestamp", String.valueOf(timestamp))
                     .header("X-Aura-Event-Id", delivery.getEventId())
                     .header("X-Aura-Event-Type", delivery.getEventType())
@@ -83,7 +84,7 @@ public class WebhookDispatcherService {
             log.warn("Webhook delivery attempt {} failed for deliveryId={}: {}", currentAttempt, delivery.getId(), ex.getMessage());
 
             int statusCode = 500;
-            if (ex instanceof org.springframework.web.client.HttpStatusCodeException httpEx) {
+            if (ex instanceof HttpStatusCodeException httpEx) {
                 statusCode = httpEx.getStatusCode().value();
             }
             delivery.setHttpStatus(statusCode);

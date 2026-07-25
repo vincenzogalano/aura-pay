@@ -31,24 +31,24 @@ public class WebhookService {
 
     @Transactional
     public WebhookSubscriptionResponse createOrUpdateSubscription(WebhookSubscriptionRequest request) {
-        WebhookSubscription sub = subscriptionRepository.findByMerchantId(request.getMerchantId())
+        WebhookSubscription sub = subscriptionRepository.findByMerchantId(request.merchantId())
                 .orElseGet(() -> WebhookSubscription.builder()
                         .id(UUID.randomUUID())
-                        .merchantId(request.getMerchantId())
-                        .secretKey(request.getSecretKey() != null ? request.getSecretKey() : "whsec_" + UUID.randomUUID().toString().replace("-", ""))
+                        .merchantId(request.merchantId())
+                        .secretKey(request.secretKey() != null ? request.secretKey() : "whsec_" + UUID.randomUUID().toString().replace("-", ""))
                         .build());
 
-        sub.setTargetUrl(request.getTargetUrl());
-        if (request.getSecretKey() != null && !request.getSecretKey().isBlank()) {
-            sub.setSecretKey(request.getSecretKey());
+        sub.setTargetUrl(request.targetUrl());
+        if (request.secretKey() != null && !request.secretKey().isBlank()) {
+            sub.setSecretKey(request.secretKey());
         }
-        if (request.getEnabled() != null) {
-            sub.setEnabled(request.getEnabled());
+        if (request.enabled() != null) {
+            sub.setEnabled(request.enabled());
         } else {
             sub.setEnabled(true);
         }
-        if (request.getSubscribedEvents() != null) {
-            sub.setSubscribedEvents(request.getSubscribedEvents());
+        if (request.subscribedEvents() != null) {
+            sub.setSubscribedEvents(request.subscribedEvents());
         }
 
         sub = subscriptionRepository.save(sub);
@@ -99,12 +99,12 @@ public class WebhookService {
     @Transactional
     public List<WebhookDeliveryResponse> replayRange(ReplayRequest request) {
         List<WebhookDelivery> deliveries = deliveryRepository.findForReplay(
-                request.getMerchantId(),
-                request.getStartTime(),
-                request.getEndTime()
+                request.merchantId(),
+                request.startTime(),
+                request.endTime()
         );
 
-        log.info("Triggered range replay for merchantId={}, found {} deliveries", request.getMerchantId(), deliveries.size());
+        log.info("Triggered range replay for merchantId={}, found {} deliveries", request.merchantId(), deliveries.size());
         for (WebhookDelivery delivery : deliveries) {
             delivery.setAttemptCount(0);
             delivery.setStatus(DeliveryStatus.PENDING);

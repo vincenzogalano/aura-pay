@@ -1,6 +1,7 @@
 package com.aurapay.webhook.consumer;
 
 import com.aurapay.core.events.DomainEvent;
+import com.aurapay.core.events.EventType;
 import com.aurapay.webhook.domain.WebhookDelivery;
 import com.aurapay.webhook.domain.WebhookSubscription;
 import com.aurapay.webhook.domain.enums.DeliveryStatus;
@@ -33,13 +34,13 @@ public class MerchantEventsConsumer {
 
     @KafkaListener(
             topics = {
-                    "aura.payment.succeeded.v1",
-                    "aura.refund.succeeded.v1",
-                    "aura.merchant.verified.v1",
-                    "aura.merchant.verification_rejected.v1",
-                    "aura.invoice.generated.v1",
-                    "aura.payment.failed.v1",
-                    "aura.refund.failed.v1"
+                    EventType.Topics.PAYMENT_SUCCEEDED,
+                    EventType.Topics.REFUND_SUCCEEDED,
+                    EventType.Topics.MERCHANT_VERIFIED,
+                    EventType.Topics.MERCHANT_VERIFICATION_REJECTED,
+                    EventType.Topics.INVOICE_GENERATED,
+                    EventType.Topics.PAYMENT_FAILED,
+                    EventType.Topics.REFUND_FAILED
             },
             groupId = "webhook-service-group"
     )

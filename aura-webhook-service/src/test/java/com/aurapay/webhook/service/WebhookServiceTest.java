@@ -52,21 +52,23 @@ class WebhookServiceTest {
     @Test
     @DisplayName("Creazione sottoscrizione webhook salva l'URL target e genera secret se non fornito")
     void createOrUpdateSubscription_success() {
-        WebhookSubscriptionRequest req = WebhookSubscriptionRequest.builder()
-                .merchantId(merchantId)
-                .targetUrl("https://merchant.example.com/webhook")
-                .enabled(true)
-                .build();
+        WebhookSubscriptionRequest req = new WebhookSubscriptionRequest(
+                merchantId,
+                "https://merchant.example.com/webhook",
+                null,
+                true,
+                null
+        );
 
         given(subscriptionRepository.findByMerchantId(merchantId)).willReturn(Optional.empty());
         given(subscriptionRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
         WebhookSubscriptionResponse response = webhookService.createOrUpdateSubscription(req);
 
-        assertThat(response.getMerchantId()).isEqualTo(merchantId);
-        assertThat(response.getTargetUrl()).isEqualTo("https://merchant.example.com/webhook");
-        assertThat(response.getSecretKey()).startsWith("whsec_");
-        assertThat(response.isEnabled()).isTrue();
+        assertThat(response.merchantId()).isEqualTo(merchantId);
+        assertThat(response.targetUrl()).isEqualTo("https://merchant.example.com/webhook");
+        assertThat(response.secretKey()).startsWith("whsec_");
+        assertThat(response.enabled()).isTrue();
     }
 
     @Test
@@ -91,8 +93,8 @@ class WebhookServiceTest {
 
         WebhookDeliveryResponse response = webhookService.replayDelivery(deliveryId);
 
-        assertThat(response.getAttemptCount()).isEqualTo(0);
-        assertThat(response.getStatus()).isEqualTo(DeliveryStatus.PENDING);
+        assertThat(response.attemptCount()).isEqualTo(0);
+        assertThat(response.status()).isEqualTo(DeliveryStatus.PENDING);
 
         verify(dispatcherService).dispatchDelivery(delivery);
     }

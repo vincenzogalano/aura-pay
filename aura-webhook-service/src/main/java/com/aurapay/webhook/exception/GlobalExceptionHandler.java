@@ -3,7 +3,7 @@ package com.aurapay.webhook.exception;
 import com.aurapay.core.exception.AuraErrorCode;
 import com.aurapay.core.exception.BusinessException;
 import com.aurapay.core.exception.ErrorResponse;
-import com.aurapay.core.exception.FieldErrorDto;
+import com.aurapay.core.exception.FieldErrorResponse;
 import com.aurapay.core.exception.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -13,9 +13,12 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import org.springframework.stereotype.Component;
+
 import java.util.List;
 
 @Slf4j
+@Component("webhookGlobalExceptionHandler")
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -47,8 +50,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex, HttpServletRequest request) {
         log.warn("Validation error on request path {}", request.getRequestURI());
-        List<FieldErrorDto> fieldErrors = ex.getBindingResult().getFieldErrors().stream()
-                .map(err -> new FieldErrorDto(err.getField(), err.getDefaultMessage(), err.getRejectedValue()))
+        List<FieldErrorResponse> fieldErrors = ex.getBindingResult().getFieldErrors().stream()
+                .map(err -> new FieldErrorResponse(err.getField(), err.getDefaultMessage(), err.getRejectedValue()))
                 .toList();
 
         ErrorResponse errorResponse = ErrorResponse.of(
@@ -68,7 +71,7 @@ public class GlobalExceptionHandler {
         ErrorResponse errorResponse = ErrorResponse.of(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 AuraErrorCode.INTERNAL_SERVER_ERROR.getCode(),
-                ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred",
+                "An unexpected internal server error occurred",
                 request.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
