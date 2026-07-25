@@ -1,7 +1,7 @@
 package com.aurapay.orchestrator;
 
 import com.aurapay.orchestrator.client.BankSimulatorClient;
-import com.aurapay.orchestrator.client.VaultClient;
+import com.aurapay.orchestrator.client.VaultServiceClient;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class AuraPaymentOrchestratorApplicationTests {
 
     @MockitoBean
-    private VaultClient vaultClient;
+    private VaultServiceClient vaultClient;
 
     @MockitoBean
     private BankSimulatorClient bankSimulatorClient;

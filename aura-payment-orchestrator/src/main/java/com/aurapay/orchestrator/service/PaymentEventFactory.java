@@ -4,8 +4,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.aurapay.core.enums.AggregateType;
 import com.aurapay.core.enums.PaymentFailureCode;
-import com.aurapay.core.events.*;
-import com.aurapay.core.exception.CryptoException;
+import com.aurapay.core.events.DomainEvent;
+import com.aurapay.core.events.EventType;
+import com.aurapay.core.events.PaymentFailedEvent;
+import com.aurapay.core.events.PaymentIntentCreatedEvent;
+import com.aurapay.core.events.PaymentProcessingEvent;
+import com.aurapay.core.events.PaymentSucceededEvent;
+import com.aurapay.core.exception.AuraException;
 import com.aurapay.orchestrator.domain.OutboxEvent;
 import com.aurapay.orchestrator.domain.PaymentIntent;
 import lombok.RequiredArgsConstructor;
@@ -55,7 +60,7 @@ public class PaymentEventFactory {
 
     public OutboxEvent buildSucceededOutboxEvent(PaymentIntent intent, String cardLastFour) {
         String eventId = UUID.randomUUID().toString();
-        long feeCents = Math.round(intent.getAmountCents() * 0.015);
+        long feeCents = (intent.getAmountCents() * 15) / 1000; // Exact 1.5% fee calculation in integer cents
         PaymentSucceededEvent event = new PaymentSucceededEvent(
                 eventId,
                 EventType.PAYMENT_SUCCEEDED.getTopicName(),
@@ -104,7 +109,7 @@ public class PaymentEventFactory {
                     .build();
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize domain event: {}", domainEvent, e);
-            throw new CryptoException("Failed to serialize outbox domain event: " + e.getMessage());
+            throw new AuraException("Failed to serialize outbox domain event: " + e.getMessage(), e);
         }
     }
 }

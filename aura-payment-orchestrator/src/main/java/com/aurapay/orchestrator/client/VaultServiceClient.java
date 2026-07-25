@@ -11,13 +11,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 @Slf4j
-@Component
-public class VaultClient {
+@Component("orchestratorVaultServiceClient")
+public class VaultServiceClient {
 
     private final RestClient restClient;
 
-    public VaultClient(@Value("${aurapay.services.vault-url:http://localhost:8084}") String vaultBaseUrl,
-                        RestClient.Builder restClientBuilder) {
+    public VaultServiceClient(@Value("${aurapay.services.vault-url:http://localhost:8084}") String vaultBaseUrl,
+                               RestClient.Builder restClientBuilder) {
         this.restClient = restClientBuilder
                 .baseUrl(vaultBaseUrl)
                 .requestInterceptor(new CorrelationIdInterceptor())

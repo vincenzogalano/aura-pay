@@ -4,7 +4,7 @@ import com.aurapay.core.enums.PaymentFailureCode;
 import com.aurapay.core.exception.DomainRuleViolationException;
 import com.aurapay.core.exception.ResourceNotFoundException;
 import com.aurapay.orchestrator.client.BankSimulatorClient;
-import com.aurapay.orchestrator.client.VaultClient;
+import com.aurapay.orchestrator.client.VaultServiceClient;
 import com.aurapay.orchestrator.client.dto.BankAuthorizationRequest;
 import com.aurapay.orchestrator.client.dto.BankAuthorizationResponse;
 import com.aurapay.orchestrator.client.dto.VaultCardDetailsResponse;
@@ -31,7 +31,7 @@ public class PaymentOrchestrationService {
     private final PaymentIntentRepository paymentIntentRepository;
     private final OutboxEventRepository outboxEventRepository;
     private final PaymentEventFactory paymentEventFactory;
-    private final VaultClient vaultClient;
+    private final VaultServiceClient vaultServiceClient;
     private final BankSimulatorClient bankSimulatorClient;
 
     @Transactional
@@ -57,31 +57,16 @@ public class PaymentOrchestrationService {
         return PaymentIntentResponse.fromEntity(savedIntent);
     }
 
-    @Transactional
     public PaymentIntentResponse confirmPayment(UUID id, ConfirmPaymentIntentRequest request) {
         log.info("Confirming PaymentIntent id: {}", id);
 
-        PaymentIntent intent = paymentIntentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("PaymentIntent with id '" + id + "' not found"));
+        // Phase 1: Short DB Transaction to move state to PROCESSING
+        PaymentIntent intent = startProcessingTransaction(id, request.paymentMethodToken());
 
-        if (intent.getStatus() != PaymentStatus.CREATED) {
-            log.warn("Cannot confirm PaymentIntent {} in state: {}", id, intent.getStatus());
-            throw new DomainRuleViolationException("PaymentIntent is not in CREATED state, current state: " + intent.getStatus());
-        }
-
-        // 1. Move state to PROCESSING & save outbox event
-        intent.setStatus(PaymentStatus.PROCESSING);
-        intent.setPaymentMethodToken(request.paymentMethodToken());
-        paymentIntentRepository.save(intent);
-
-        OutboxEvent processingOutboxEvent = paymentEventFactory.buildProcessingOutboxEvent(intent);
-        outboxEventRepository.save(processingOutboxEvent);
-
-        // 2. Detokenize card via Vault Client
-        VaultCardDetailsResponse cardDetails = vaultClient.retrieveCardDetails(request.paymentMethodToken());
+        // Phase 2: HTTP Network calls outside DB Transaction
+        VaultCardDetailsResponse cardDetails = vaultServiceClient.retrieveCardDetails(request.paymentMethodToken());
         log.info("Card details retrieved for token {}, masked PAN: {}", request.paymentMethodToken(), cardDetails.maskedPan());
 
-        // 3. Authorize via Bank Simulator Client
         BankAuthorizationRequest bankRequest = new BankAuthorizationRequest(
                 intent.getId(),
                 intent.getMerchantId(),
@@ -93,7 +78,35 @@ public class PaymentOrchestrationService {
 
         BankAuthorizationResponse bankResponse = bankSimulatorClient.authorizePayment(bankRequest);
 
-        // 4. Update status & save corresponding outbox event
+        // Phase 3: Short DB Transaction to finalize PaymentIntent state & Outbox event
+        return completePaymentTransaction(id, cardDetails, bankResponse);
+    }
+
+    @Transactional
+    public PaymentIntent startProcessingTransaction(UUID id, String paymentMethodToken) {
+        PaymentIntent intent = paymentIntentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("PaymentIntent with id '" + id + "' not found"));
+
+        if (intent.getStatus() != PaymentStatus.CREATED) {
+            log.warn("Cannot confirm PaymentIntent {} in state: {}", id, intent.getStatus());
+            throw new DomainRuleViolationException("PaymentIntent is not in CREATED state, current state: " + intent.getStatus());
+        }
+
+        intent.setStatus(PaymentStatus.PROCESSING);
+        intent.setPaymentMethodToken(paymentMethodToken);
+        PaymentIntent saved = paymentIntentRepository.save(intent);
+
+        OutboxEvent processingOutboxEvent = paymentEventFactory.buildProcessingOutboxEvent(saved);
+        outboxEventRepository.save(processingOutboxEvent);
+
+        return saved;
+    }
+
+    @Transactional
+    public PaymentIntentResponse completePaymentTransaction(UUID id, VaultCardDetailsResponse cardDetails, BankAuthorizationResponse bankResponse) {
+        PaymentIntent intent = paymentIntentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("PaymentIntent with id '" + id + "' not found"));
+
         if (bankResponse != null && bankResponse.authorized()) {
             log.info("PaymentIntent {} authorized by bank. TransactionId: {}", id, bankResponse.transactionId());
             intent.setStatus(PaymentStatus.SUCCEEDED);
@@ -166,3 +179,4 @@ public class PaymentOrchestrationService {
         return "****";
     }
 }
+

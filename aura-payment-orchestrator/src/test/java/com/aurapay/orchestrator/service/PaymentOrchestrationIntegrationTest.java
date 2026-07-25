@@ -1,7 +1,7 @@
 package com.aurapay.orchestrator.service;
 
 import com.aurapay.orchestrator.client.BankSimulatorClient;
-import com.aurapay.orchestrator.client.VaultClient;
+import com.aurapay.orchestrator.client.VaultServiceClient;
 import com.aurapay.orchestrator.client.dto.BankAuthorizationRequest;
 import com.aurapay.orchestrator.client.dto.BankAuthorizationResponse;
 import com.aurapay.orchestrator.client.dto.VaultCardDetailsResponse;
@@ -46,7 +46,7 @@ class PaymentOrchestrationIntegrationTest {
     private OutboxEventRepository outboxEventRepository;
 
     @MockitoBean
-    private VaultClient vaultClient;
+    private VaultServiceClient vaultClient;
 
     @MockitoBean
     private BankSimulatorClient bankSimulatorClient;

@@ -3,7 +3,7 @@ package com.aurapay.orchestrator.service;
 import com.aurapay.core.enums.PaymentFailureCode;
 import com.aurapay.core.exception.DomainRuleViolationException;
 import com.aurapay.orchestrator.client.BankSimulatorClient;
-import com.aurapay.orchestrator.client.VaultClient;
+import com.aurapay.orchestrator.client.VaultServiceClient;
 import com.aurapay.orchestrator.client.dto.BankAuthorizationRequest;
 import com.aurapay.orchestrator.client.dto.BankAuthorizationResponse;
 import com.aurapay.orchestrator.client.dto.VaultCardDetailsResponse;
@@ -47,7 +47,7 @@ class PaymentOrchestrationServiceTest {
     private PaymentEventFactory paymentEventFactory;
 
     @Mock
-    private VaultClient vaultClient;
+    private VaultServiceClient vaultClient;
 
     @Mock
     private BankSimulatorClient bankSimulatorClient;
