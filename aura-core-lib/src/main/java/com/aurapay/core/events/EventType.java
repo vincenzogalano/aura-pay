@@ -52,4 +52,27 @@ public enum EventType {
         }
         return null;
     }
+
+    public static final class Topics {
+        public static final String MERCHANT_CREATED = "aura.merchant.created.v1";
+        public static final String MERCHANT_VERIFIED = "aura.merchant.verified.v1";
+        public static final String MERCHANT_VERIFICATION_REJECTED = "aura.merchant.verification_rejected.v1";
+        public static final String API_KEY_CREATED = "aura.apikey.created.v1";
+        public static final String API_KEY_REVOKED = "aura.apikey.revoked.v1";
+        public static final String PAYMENT_INTENT_CREATED = "aura.paymentintent.created.v1";
+        public static final String PAYMENT_PROCESSING = "aura.payment.processing.v1";
+        public static final String PAYMENT_SUCCEEDED = "aura.payment.succeeded.v1";
+        public static final String PAYMENT_FAILED = "aura.payment.failed.v1";
+        public static final String REFUND_REQUESTED = "aura.refund.requested.v1";
+        public static final String REFUND_SUCCEEDED = "aura.refund.succeeded.v1";
+        public static final String REFUND_FAILED = "aura.refund.failed.v1";
+        public static final String INVOICE_GENERATED = "aura.invoice.generated.v1";
+        public static final String INVOICE_GENERATION_FAILED = "aura.invoice.generation_failed.v1";
+        public static final String WEBHOOK_DELIVERY_SUCCEEDED = "aura.webhook.delivery_succeeded.v1";
+        public static final String WEBHOOK_DELIVERY_DEAD_LETTERED = "aura.webhook.delivery_dead_lettered.v1";
+        public static final String LEDGER_ENTRY_RECORDED = "aura.ledger.entry_recorded.v1";
+        public static final String BANK_AUTHORIZATION_RESULT = "aura.bank.authorization_result.v1";
+
+        private Topics() {}
+    }
 }
