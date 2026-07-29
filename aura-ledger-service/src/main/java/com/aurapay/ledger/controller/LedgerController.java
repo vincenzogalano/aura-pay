@@ -22,6 +22,17 @@ import org.springframework.web.bind.annotation.RestController;
 public class LedgerController {
 
     private final LedgerService ledgerService;
+
+    @GetMapping("/balance")
+    public ResponseEntity<MerchantBalanceResponse> getBalanceQuery(
+            @RequestParam(value = "merchantId", required = false, defaultValue = "mch_acme_tech_2026") String merchantId,
+            @RequestParam(value = "isTest", defaultValue = "true") boolean isTest
+    ) {
+        log.info("REST request to fetch balance for merchantId: {} (isTest: {})", merchantId, isTest);
+        MerchantBalanceResponse response = ledgerService.getMerchantBalance(merchantId, isTest);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/accounts/{merchantId}/balance")
     public ResponseEntity<MerchantBalanceResponse> getBalance(
             @PathVariable String merchantId,
@@ -31,6 +42,20 @@ public class LedgerController {
         MerchantBalanceResponse response = ledgerService.getMerchantBalance(merchantId, isTest);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/entries")
+    public ResponseEntity<Page<LedgerEntryResponse>> getEntriesQuery(
+            @RequestParam(value = "merchantId", required = false, defaultValue = "mch_acme_tech_2026") String merchantId,
+            @RequestParam(value = "isTest", defaultValue = "true") boolean isTest,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        log.info("REST request to fetch ledger entries for merchantId: {} (isTest: {})", merchantId, isTest);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<LedgerEntryResponse> entries = ledgerService.getMerchantEntries(merchantId, isTest, pageable);
+        return ResponseEntity.ok(entries);
+    }
+
     @GetMapping("/entries/{merchantId}")
     public ResponseEntity<Page<LedgerEntryResponse>> getEntries(
             @PathVariable String merchantId,

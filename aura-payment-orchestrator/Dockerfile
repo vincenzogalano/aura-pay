@@ -5,6 +5,6 @@ RUN apk add --no-cache maven && mvn package -DskipTests -pl aura-payment-orchest
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-COPY --from=builder /app/aura-payment-orchestrator/target/*.jar app.jar
+COPY --from=builder /app/aura-payment-orchestrator/target/*-exec.jar app.jar
 EXPOSE 8082
 ENTRYPOINT ["java", "-jar", "app.jar"]

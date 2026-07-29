@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -25,6 +26,15 @@ import java.util.UUID;
 public class InvoiceController {
 
     private final InvoiceService invoiceService;
+
+    @GetMapping
+    public ResponseEntity<List<InvoiceResponse>> getInvoices(
+            @RequestParam(value = "merchantId", required = false) String merchantId,
+            @RequestParam(value = "isTest", required = false) Boolean isTest) {
+        log.info("REST request to list invoices with isTest={}", isTest);
+        List<InvoiceResponse> response = invoiceService.getAllInvoices(isTest);
+        return ResponseEntity.ok(response);
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<InvoiceResponse> getInvoiceById(@PathVariable UUID id) {

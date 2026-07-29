@@ -5,6 +5,6 @@ RUN apk add --no-cache maven && mvn package -DskipTests -pl aura-invoice-service
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-COPY --from=builder /app/aura-invoice-service/target/*.jar app.jar
+COPY --from=builder /app/aura-invoice-service/target/*-exec.jar app.jar
 EXPOSE 8088
 ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -5,6 +5,6 @@ RUN apk add --no-cache maven && mvn package -DskipTests -pl aura-bank-simulator 
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-COPY --from=builder /app/aura-bank-simulator/target/*.jar app.jar
+COPY --from=builder /app/aura-bank-simulator/target/*-exec.jar app.jar
 EXPOSE 8086
 ENTRYPOINT ["java", "-jar", "app.jar"]
