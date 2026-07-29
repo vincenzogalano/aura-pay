@@ -47,13 +47,27 @@ public class WebhookService {
         } else {
             sub.setEnabled(true);
         }
-        if (request.subscribedEvents() != null) {
-            sub.setSubscribedEvents(request.subscribedEvents());
-        }
+        sub.setSubscribedEvents(request.getSubscribedEventsString());
 
         sub = subscriptionRepository.save(sub);
         log.info("Saved WebhookSubscription for merchantId={}, targetUrl={}", sub.getMerchantId(), sub.getTargetUrl());
         return WebhookSubscriptionResponse.fromEntity(sub);
+    }
+
+    @Transactional
+    public void deleteSubscription(UUID subscriptionId) {
+        subscriptionRepository.deleteById(subscriptionId);
+        log.info("Deleted WebhookSubscription id={}", subscriptionId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<WebhookSubscriptionResponse> getAllSubscriptions() {
+        return subscriptionRepository.findAll().stream().map(WebhookSubscriptionResponse::fromEntity).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<WebhookDeliveryResponse> getAllDeliveries(Pageable pageable) {
+        return deliveryRepository.findAll(pageable).map(WebhookDeliveryResponse::fromEntity);
     }
 
     @Transactional(readOnly = true)

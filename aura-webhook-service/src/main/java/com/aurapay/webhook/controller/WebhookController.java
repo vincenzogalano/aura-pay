@@ -32,6 +32,19 @@ public class WebhookController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @DeleteMapping("/subscriptions/{id}")
+    public ResponseEntity<Void> deleteSubscription(@PathVariable("id") UUID id) {
+        webhookService.deleteSubscription(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/subscriptions")
+    public ResponseEntity<List<WebhookSubscriptionResponse>> getSubscriptions(
+            @RequestParam(value = "merchantId", required = false) String merchantId) {
+        List<WebhookSubscriptionResponse> list = webhookService.getAllSubscriptions();
+        return ResponseEntity.ok(list);
+    }
+
     @GetMapping("/subscriptions/{merchantId}")
     public ResponseEntity<WebhookSubscriptionResponse> getSubscription(
             @PathVariable("merchantId") UUID merchantId) {
@@ -41,13 +54,22 @@ public class WebhookController {
 
     @GetMapping("/deliveries")
     public ResponseEntity<Page<WebhookDeliveryResponse>> getDeliveries(
-            @RequestParam("merchantId") UUID merchantId,
+            @RequestParam(value = "merchantId", required = false) String merchantId,
             @RequestParam(value = "status", required = false) DeliveryStatus status,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size) {
-        Page<WebhookDeliveryResponse> deliveries = webhookService.getDeliveries(
-                merchantId,
-                status,
+        if (merchantId != null && !merchantId.isBlank()) {
+            try {
+                UUID uuid = UUID.fromString(merchantId);
+                Page<WebhookDeliveryResponse> deliveries = webhookService.getDeliveries(
+                        uuid,
+                        status,
+                        PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
+                );
+                return ResponseEntity.ok(deliveries);
+            } catch (Exception ignored) {}
+        }
+        Page<WebhookDeliveryResponse> deliveries = webhookService.getAllDeliveries(
                 PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
         );
         return ResponseEntity.ok(deliveries);

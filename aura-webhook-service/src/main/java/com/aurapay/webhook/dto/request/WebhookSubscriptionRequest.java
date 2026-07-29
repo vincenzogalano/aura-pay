@@ -1,5 +1,7 @@
 package com.aurapay.webhook.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -18,5 +20,21 @@ public record WebhookSubscriptionRequest(
 
         Boolean enabled,
 
-        String subscribedEvents
-) {}
+        @JsonAlias("events")
+        JsonNode subscribedEvents
+) {
+    public String getSubscribedEventsString() {
+        if (subscribedEvents == null || subscribedEvents.isNull()) {
+            return "*";
+        }
+        if (subscribedEvents.isArray()) {
+            StringBuilder sb = new StringBuilder();
+            for (JsonNode item : subscribedEvents) {
+                if (!sb.isEmpty()) sb.append(",");
+                sb.append(item.asText());
+            }
+            return sb.toString();
+        }
+        return subscribedEvents.asText();
+    }
+}
