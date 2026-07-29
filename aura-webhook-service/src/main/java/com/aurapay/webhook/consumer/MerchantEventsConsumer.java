@@ -1,6 +1,5 @@
 package com.aurapay.webhook.consumer;
 
-import com.aurapay.core.events.DomainEvent;
 import com.aurapay.core.events.EventType;
 import com.aurapay.webhook.domain.WebhookDelivery;
 import com.aurapay.webhook.domain.WebhookSubscription;
@@ -8,11 +7,14 @@ import com.aurapay.webhook.domain.enums.DeliveryStatus;
 import com.aurapay.webhook.repository.WebhookDeliveryRepository;
 import com.aurapay.webhook.repository.WebhookSubscriptionRepository;
 import com.aurapay.webhook.service.WebhookDispatcherService;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -44,56 +46,61 @@ public class MerchantEventsConsumer {
             },
             groupId = "webhook-service-group"
     )
-    public void consumeDomainEvent(DomainEvent event) {
-        log.info("Received Kafka event type={} id={}", event.getEventType(), event.getEventId());
-
+    public void consumeDomainEvent(
+            String rawMessage,
+            @Header(KafkaHeaders.RECEIVED_TOPIC) String topic
+    ) {
+        log.info("Received Kafka raw message on topic={}", topic);
         try {
-            UUID merchantId = extractMerchantId(event);
+            JsonNode node = objectMapper.readTree(rawMessage);
+
+            String eventId = node.has("eventId") ? node.get("eventId").asText() : UUID.randomUUID().toString();
+            String eventType = node.has("eventType") ? node.get("eventType").asText() : topic;
+            boolean isTest = node.has("isTest") && node.get("isTest").asBoolean(true);
+
+            UUID merchantId = extractMerchantId(node);
             if (merchantId == null) {
-                log.warn("Could not extract merchantId from event {}", event);
+                log.warn("Could not extract merchantId from event topic={} payload={}", topic, rawMessage);
                 return;
             }
 
             Optional<WebhookSubscription> subOpt = subscriptionRepository.findByMerchantId(merchantId);
             if (subOpt.isEmpty() || !subOpt.get().isEnabled()) {
-                log.info("No active webhook subscription found for merchantId={}. Skipping webhook dispatch.", merchantId);
+                log.info("No active webhook subscription for merchantId={}. Skipping.", merchantId);
                 return;
             }
 
             WebhookSubscription subscription = subOpt.get();
-            String payloadJson = objectMapper.writeValueAsString(event);
 
             WebhookDelivery delivery = WebhookDelivery.builder()
                     .id(UUID.randomUUID())
-                    .eventId(event.getEventId())
+                    .eventId(eventId)
                     .merchantId(merchantId)
-                    .eventType(event.getEventType())
+                    .eventType(eventType)
                     .targetUrl(subscription.getTargetUrl())
-                    .payload(payloadJson)
+                    .payload(rawMessage)
                     .attemptCount(0)
                     .maxAttempts(maxAttempts)
                     .status(DeliveryStatus.PENDING)
                     .createdAt(Instant.now())
-                    .isTest(event.isTest())
+                    .isTest(isTest)
                     .build();
 
             delivery = deliveryRepository.save(delivery);
             dispatcherService.dispatchDelivery(delivery);
 
         } catch (Exception e) {
-            log.error("Failed to process consumed event {}", event.getEventId(), e);
+            log.error("Failed to process Kafka message on topic={}: {}", topic, e.getMessage(), e);
         }
     }
 
-    private UUID extractMerchantId(DomainEvent event) {
+    private UUID extractMerchantId(JsonNode node) {
         try {
-            String json = objectMapper.writeValueAsString(event);
-            var node = objectMapper.readTree(json);
             if (node.has("merchantId")) {
                 return UUID.fromString(node.get("merchantId").asText());
             }
         } catch (Exception e) {
-            log.error("Failed to extract merchantId from Kafka record payload: {}", e.getMessage());
+            log.error("Failed to extract merchantId: {}", e.getMessage());
         }
         return null;
     }

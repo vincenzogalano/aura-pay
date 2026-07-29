@@ -22,6 +22,12 @@
             <artifactId>aura-core-lib</artifactId>
         </dependency>
 
+        <!-- Spring Kafka -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
+
         <!-- Spring Boot Web & Validation -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

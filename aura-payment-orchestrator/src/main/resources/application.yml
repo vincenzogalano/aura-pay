@@ -31,6 +31,13 @@ spring:
     init:
       mode: always
       schema-locations: classpath:schema.sql
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+    consumer:
+      group-id: orchestrator-event-collector-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
 management:
   endpoints:
@@ -43,5 +50,5 @@ management:
 
 aurapay:
   services:
-    vault-url: ${VAULT_SERVICE_URL:http://localhost:8084}
-    bank-simulator-url: ${BANK_SIMULATOR_URL:http://localhost:8086}
+    vault-url: ${SERVICES_VAULT_URL:${VAULT_SERVICE_URL:http://vault-service:8084}}
+    bank-simulator-url: ${SERVICES_BANK_URL:${BANK_SIMULATOR_URL:http://bank-simulator:8086}}
