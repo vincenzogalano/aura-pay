@@ -72,6 +72,8 @@ public class InvoiceService {
                 .invoiceNumber(invoiceNumber)
                 .merchantId(merchantUuid)
                 .paymentIntentId(paymentIntentUuid)
+                .customerEmail(event.customerEmail())
+                .description(event.description())
                 .invoiceType(InvoiceType.INVOICE)
                 .amountCents(event.amountCents())
                 .currency(event.currency() != null ? event.currency() : "EUR")
@@ -87,10 +89,32 @@ public class InvoiceService {
             storageService.uploadPdf(objectKey, pdfBytes);
 
             invoice = invoiceRepository.save(invoice);
+        } catch (Exception e) {
+            log.error("Failed to generate invoice for paymentIntentId={}: {}", event.paymentIntentId(), e.getMessage(), e);
+            invoice.setStatus(InvoiceStatus.FAILED);
+            invoiceRepository.save(invoice);
 
+            try {
+                InvoiceGenerationFailedEvent failedEvent = new InvoiceGenerationFailedEvent(
+                        "evt_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12),
+                        "aura.invoice.generation_failed.v1",
+                        Instant.now(),
+                        event.merchantId(),
+                        event.paymentIntentId(),
+                        e.getMessage(),
+                        invoice.getIsTest()
+                );
+                eventPublisher.publishInvoiceGenerationFailed(failedEvent);
+            } catch (Exception kafkaEx) {
+                log.error("Also failed to publish InvoiceGenerationFailedEvent: {}", kafkaEx.getMessage());
+            }
+            return invoice;
+        }
+
+        try {
             InvoiceGeneratedEvent generatedEvent = new InvoiceGeneratedEvent(
                     "evt_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12),
-                    "invoice.generated",
+                    "aura.invoice.generated.v1",
                     Instant.now(),
                     invoice.getId().toString(),
                     invoice.getInvoiceNumber(),
@@ -101,26 +125,12 @@ public class InvoiceService {
                     invoice.getIsTest()
             );
             eventPublisher.publishInvoiceGenerated(generatedEvent);
-
-            log.info("Invoice created successfully ID={}, number={}", invoice.getId(), invoiceNumber);
-            return invoice;
-        } catch (Exception e) {
-            log.error("Failed to generate invoice for paymentIntentId={}: {}", event.paymentIntentId(), e.getMessage(), e);
-            invoice.setStatus(InvoiceStatus.FAILED);
-            invoiceRepository.save(invoice);
-
-            InvoiceGenerationFailedEvent failedEvent = new InvoiceGenerationFailedEvent(
-                    "evt_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12),
-                    "invoice.generation_failed",
-                    Instant.now(),
-                    event.merchantId(),
-                    event.paymentIntentId(),
-                    e.getMessage(),
-                    invoice.getIsTest()
-            );
-            eventPublisher.publishInvoiceGenerationFailed(failedEvent);
-            throw new RuntimeException("Invoice generation failed: " + e.getMessage(), e);
+        } catch (Exception kafkaEx) {
+            log.error("Failed to publish InvoiceGeneratedEvent (invoice already saved): {}", kafkaEx.getMessage());
         }
+
+        log.info("Invoice created successfully ID={}, number={}", invoice.getId(), invoiceNumber);
+        return invoice;
     }
 
     @Transactional
@@ -129,7 +139,12 @@ public class InvoiceService {
                 event.refundId(), event.merchantId());
 
         UUID merchantUuid = UUID.fromString(event.merchantId());
-        UUID refundUuid = UUID.fromString(event.refundId());
+        UUID refundUuid;
+        try {
+            refundUuid = UUID.fromString(event.refundId());
+        } catch (IllegalArgumentException e) {
+            refundUuid = UUID.nameUUIDFromBytes(event.refundId().getBytes());
+        }
         UUID paymentIntentUuid = event.paymentIntentId() != null ? UUID.fromString(event.paymentIntentId()) : null;
 
         Optional<Invoice> existing = invoiceRepository.findByRefundIdAndInvoiceType(
@@ -149,6 +164,7 @@ public class InvoiceService {
                 .merchantId(merchantUuid)
                 .paymentIntentId(paymentIntentUuid)
                 .refundId(refundUuid)
+                .description("Storno / Rimborso: " + (event.reason() != null ? event.reason() : "Reso prodotto"))
                 .invoiceType(InvoiceType.CREDIT_NOTE)
                 .amountCents(event.amountCents())
                 .currency("EUR")
@@ -164,10 +180,32 @@ public class InvoiceService {
             storageService.uploadPdf(objectKey, pdfBytes);
 
             invoice = invoiceRepository.save(invoice);
+        } catch (Exception e) {
+            log.error("Failed to generate credit note for refundId={}: {}", event.refundId(), e.getMessage(), e);
+            invoice.setStatus(InvoiceStatus.FAILED);
+            invoiceRepository.save(invoice);
 
+            try {
+                InvoiceGenerationFailedEvent failedEvent = new InvoiceGenerationFailedEvent(
+                        "evt_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12),
+                        "aura.invoice.generation_failed.v1",
+                        Instant.now(),
+                        event.merchantId(),
+                        event.paymentIntentId(),
+                        e.getMessage(),
+                        invoice.getIsTest()
+                );
+                eventPublisher.publishInvoiceGenerationFailed(failedEvent);
+            } catch (Exception kafkaEx) {
+                log.error("Also failed to publish InvoiceGenerationFailedEvent: {}", kafkaEx.getMessage());
+            }
+            return invoice;
+        }
+
+        try {
             InvoiceGeneratedEvent generatedEvent = new InvoiceGeneratedEvent(
                     "evt_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12),
-                    "invoice.generated",
+                    "aura.invoice.generated.v1",
                     Instant.now(),
                     invoice.getId().toString(),
                     invoice.getInvoiceNumber(),
@@ -178,26 +216,12 @@ public class InvoiceService {
                     invoice.getIsTest()
             );
             eventPublisher.publishInvoiceGenerated(generatedEvent);
-
-            log.info("Credit note created successfully ID={}, number={}", invoice.getId(), invoiceNumber);
-            return invoice;
-        } catch (Exception e) {
-            log.error("Failed to generate credit note for refundId={}: {}", event.refundId(), e.getMessage(), e);
-            invoice.setStatus(InvoiceStatus.FAILED);
-            invoiceRepository.save(invoice);
-
-            InvoiceGenerationFailedEvent failedEvent = new InvoiceGenerationFailedEvent(
-                    "evt_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12),
-                    "invoice.generation_failed",
-                    Instant.now(),
-                    event.merchantId(),
-                    event.paymentIntentId(),
-                    e.getMessage(),
-                    invoice.getIsTest()
-            );
-            eventPublisher.publishInvoiceGenerationFailed(failedEvent);
-            throw new RuntimeException("Credit note generation failed: " + e.getMessage(), e);
+        } catch (Exception kafkaEx) {
+            log.error("Failed to publish CreditNote InvoiceGeneratedEvent: {}", kafkaEx.getMessage());
         }
+
+        log.info("Credit note created successfully ID={}, number={}", invoice.getId(), invoiceNumber);
+        return invoice;
     }
 
     @Transactional(readOnly = true)
@@ -205,6 +229,17 @@ public class InvoiceService {
         Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice not found with id: " + id));
         return InvoiceResponse.fromEntity(invoice);
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<InvoiceResponse> getAllInvoices(Boolean isTest) {
+        java.util.List<Invoice> list;
+        if (isTest != null) {
+            list = invoiceRepository.findByIsTestOrderByCreatedAtDesc(isTest);
+        } else {
+            list = invoiceRepository.findAll();
+        }
+        return list.stream().map(InvoiceResponse::fromEntity).toList();
     }
 
     @Transactional(readOnly = true)

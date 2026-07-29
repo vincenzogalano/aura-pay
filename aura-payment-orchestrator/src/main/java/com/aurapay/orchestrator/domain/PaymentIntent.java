@@ -38,6 +38,13 @@ public class PaymentIntent {
     @Column(name = "description")
     private String description;
 
+    @Column(name = "customer_email")
+    private String customerEmail;
+
+    @Column(name = "refunded_amount_cents", nullable = false)
+    @Builder.Default
+    private Long refundedAmountCents = 0L;
+
     @Column(name = "payment_method_token")
     private String paymentMethodToken;
 
@@ -72,6 +79,9 @@ public class PaymentIntent {
         }
         if (status == null) {
             status = PaymentStatus.CREATED;
+        }
+        if (refundedAmountCents == null) {
+            refundedAmountCents = 0L;
         }
         Instant now = Instant.now();
         if (createdAt == null) {

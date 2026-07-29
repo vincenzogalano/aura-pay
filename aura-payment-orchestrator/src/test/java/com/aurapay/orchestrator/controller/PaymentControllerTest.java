@@ -5,6 +5,7 @@ import com.aurapay.core.exception.ResourceNotFoundException;
 import com.aurapay.orchestrator.domain.enums.PaymentStatus;
 import com.aurapay.orchestrator.dto.request.ConfirmPaymentIntentRequest;
 import com.aurapay.orchestrator.dto.request.CreatePaymentIntentRequest;
+import com.aurapay.orchestrator.dto.request.RefundPaymentRequest;
 import com.aurapay.orchestrator.dto.response.PaymentIntentResponse;
 import com.aurapay.orchestrator.exception.GlobalExceptionHandler;
 import com.aurapay.orchestrator.service.PaymentOrchestrationService;
@@ -46,10 +47,10 @@ class PaymentControllerTest {
     void createPaymentIntent_Success() throws Exception {
         UUID merchantId = UUID.randomUUID();
         UUID intentId = UUID.randomUUID();
-        CreatePaymentIntentRequest request = new CreatePaymentIntentRequest(merchantId, 5000L, "EUR", "Test payment", true);
+        CreatePaymentIntentRequest request = new CreatePaymentIntentRequest(merchantId, 5000L, "EUR", "Test payment", "customer@test.com", true);
         PaymentIntentResponse response = new PaymentIntentResponse(
                 intentId, merchantId, 5000L, "EUR", PaymentStatus.CREATED,
-                "pi_secret_123", "Test payment", null, null, null, null, true, Instant.now(), Instant.now()
+                "pi_secret_123", "Test payment", "customer@test.com", 0L, null, null, null, null, true, Instant.now(), Instant.now()
         );
 
         given(paymentOrchestrationService.createPaymentIntent(any(CreatePaymentIntentRequest.class)))
@@ -62,13 +63,14 @@ class PaymentControllerTest {
                 .andExpect(jsonPath("$.id").value(intentId.toString()))
                 .andExpect(jsonPath("$.merchantId").value(merchantId.toString()))
                 .andExpect(jsonPath("$.amountCents").value(5000))
-                .andExpect(jsonPath("$.status").value("CREATED"));
+                .andExpect(jsonPath("$.status").value("CREATED"))
+                .andExpect(jsonPath("$.customerEmail").value("customer@test.com"));
     }
 
     @Test
     @DisplayName("POST /v1/payments - Dovrebbe restituire 400 Bad Request in caso di dati non validi")
     void createPaymentIntent_InvalidRequest() throws Exception {
-        CreatePaymentIntentRequest request = new CreatePaymentIntentRequest(null, -10L, "EUR", "Test", true);
+        CreatePaymentIntentRequest request = new CreatePaymentIntentRequest(null, -10L, "EUR", "Test", "customer@test.com", true);
 
         mockMvc.perform(post("/v1/payments")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -87,7 +89,7 @@ class PaymentControllerTest {
 
         PaymentIntentResponse response = new PaymentIntentResponse(
                 intentId, merchantId, 5000L, "EUR", PaymentStatus.SUCCEEDED,
-                "pi_secret_123", "Test payment", validLuhnToken, "AUTH_123456", "tx_bank_999", null, true, Instant.now(), Instant.now()
+                "pi_secret_123", "Test payment", "customer@test.com", 0L, validLuhnToken, "AUTH_123456", "tx_bank_999", null, true, Instant.now(), Instant.now()
         );
 
         given(paymentOrchestrationService.confirmPayment(eq(intentId), any(ConfirmPaymentIntentRequest.class)))
@@ -110,7 +112,7 @@ class PaymentControllerTest {
         UUID merchantId = UUID.randomUUID();
         PaymentIntentResponse response = new PaymentIntentResponse(
                 intentId, merchantId, 5000L, "EUR", PaymentStatus.CREATED,
-                "pi_secret_123", "Test payment", null, null, null, null, true, Instant.now(), Instant.now()
+                "pi_secret_123", "Test payment", "customer@test.com", 0L, null, null, null, null, true, Instant.now(), Instant.now()
         );
 
         given(paymentOrchestrationService.getPaymentById(intentId)).willReturn(response);
@@ -131,5 +133,29 @@ class PaymentControllerTest {
         mockMvc.perform(get("/v1/payments/{id}", intentId))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value(AuraErrorCode.RESOURCE_NOT_FOUND.getCode()));
+    }
+
+    @Test
+    @DisplayName("POST /v1/payments/{id}/refund - Dovrebbe rimborsare un PaymentIntent e restituire 200 OK")
+    void refundPayment_Success() throws Exception {
+        UUID intentId = UUID.randomUUID();
+        UUID merchantId = UUID.randomUUID();
+        RefundPaymentRequest request = new RefundPaymentRequest(2000L, "Reso prodotto");
+
+        PaymentIntentResponse response = new PaymentIntentResponse(
+                intentId, merchantId, 5000L, "EUR", PaymentStatus.PARTIALLY_REFUNDED,
+                "pi_secret_123", "Test payment", "customer@test.com", 2000L, "tok_123", "AUTH_123456", "tx_bank_999", null, true, Instant.now(), Instant.now()
+        );
+
+        given(paymentOrchestrationService.refundPayment(eq(intentId), any(RefundPaymentRequest.class)))
+                .willReturn(response);
+
+        mockMvc.perform(post("/v1/payments/{id}/refund", intentId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(intentId.toString()))
+                .andExpect(jsonPath("$.status").value("PARTIALLY_REFUNDED"))
+                .andExpect(jsonPath("$.refundedAmountCents").value(2000));
     }
 }

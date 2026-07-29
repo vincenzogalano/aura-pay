@@ -2,6 +2,7 @@ package com.aurapay.orchestrator.controller;
 
 import com.aurapay.orchestrator.dto.request.ConfirmPaymentIntentRequest;
 import com.aurapay.orchestrator.dto.request.CreatePaymentIntentRequest;
+import com.aurapay.orchestrator.dto.request.RefundPaymentRequest;
 import com.aurapay.orchestrator.dto.response.PaymentIntentResponse;
 import com.aurapay.orchestrator.service.PaymentOrchestrationService;
 import jakarta.validation.Valid;
@@ -10,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -18,6 +20,13 @@ import java.util.UUID;
 public class PaymentController {
 
     private final PaymentOrchestrationService paymentOrchestrationService;
+
+    @GetMapping
+    public ResponseEntity<List<PaymentIntentResponse>> getPayments(
+            @RequestParam(value = "isTest", required = false) Boolean isTest) {
+        List<PaymentIntentResponse> list = paymentOrchestrationService.getPayments(isTest);
+        return ResponseEntity.ok(list);
+    }
 
     @PostMapping
     public ResponseEntity<PaymentIntentResponse> createPaymentIntent(@Valid @RequestBody CreatePaymentIntentRequest request) {
@@ -42,6 +51,14 @@ public class PaymentController {
     @PostMapping("/{id}/cancel")
     public ResponseEntity<PaymentIntentResponse> cancelPayment(@PathVariable UUID id) {
         PaymentIntentResponse response = paymentOrchestrationService.cancelPayment(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{id}/refund")
+    public ResponseEntity<PaymentIntentResponse> refundPayment(
+            @PathVariable UUID id,
+            @Valid @RequestBody RefundPaymentRequest request) {
+        PaymentIntentResponse response = paymentOrchestrationService.refundPayment(id, request);
         return ResponseEntity.ok(response);
     }
 }

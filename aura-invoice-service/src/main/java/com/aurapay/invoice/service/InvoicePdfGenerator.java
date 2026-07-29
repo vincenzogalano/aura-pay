@@ -62,6 +62,11 @@ public class InvoicePdfGenerator {
                 drawLabelValue(contentStream, fontBold, fontRegular, "ID Merchant:", invoice.getMerchantId().toString(), 50, y);
                 y -= 20;
 
+                if (invoice.getCustomerEmail() != null && !invoice.getCustomerEmail().isBlank()) {
+                    drawLabelValue(contentStream, fontBold, fontRegular, "Email Cliente:", invoice.getCustomerEmail(), 50, y);
+                    y -= 20;
+                }
+
                 if (invoice.getPaymentIntentId() != null) {
                     drawLabelValue(contentStream, fontBold, fontRegular, "Riferimento PaymentIntent:", invoice.getPaymentIntentId().toString(), 50, y);
                     y -= 20;
@@ -96,9 +101,12 @@ public class InvoicePdfGenerator {
                 contentStream.beginText();
                 contentStream.setFont(fontRegular, 11);
                 contentStream.newLineAtOffset(50, y);
-                String description = invoice.getInvoiceType() == InvoiceType.CREDIT_NOTE
-                        ? "Storno / Rimborso Transazione"
-                        : "Corrispettivo Transazione Pagamento";
+                String description = invoice.getDescription();
+                if (description == null || description.isBlank()) {
+                    description = invoice.getInvoiceType() == InvoiceType.CREDIT_NOTE
+                            ? "Storno / Rimborso Transazione"
+                            : "Corrispettivo Transazione Pagamento";
+                }
                 contentStream.showText(description);
 
                 BigDecimal amount = BigDecimal.valueOf(invoice.getAmountCents()).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
@@ -131,7 +139,7 @@ public class InvoicePdfGenerator {
                     contentStream.beginText();
                     contentStream.setFont(fontBold, 38);
                     contentStream.setNonStrokingColor(new Color(220, 50, 50));
-                    
+
                     Matrix matrix = Matrix.getRotateInstance(Math.toRadians(35), 100, 320);
                     contentStream.setTextMatrix(matrix);
                     contentStream.showText("TEST - NON FISCALMENTE VALIDO");

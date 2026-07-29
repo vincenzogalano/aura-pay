@@ -13,6 +13,8 @@ public record PaymentSucceededEvent(
         String currency,
         String cardLastFour,
         String authorizationCode,
+        String customerEmail,
+        String description,
         boolean isTest
 ) implements DomainEvent {
 

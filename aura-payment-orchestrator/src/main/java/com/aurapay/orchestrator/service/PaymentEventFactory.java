@@ -10,6 +10,7 @@ import com.aurapay.core.events.PaymentFailedEvent;
 import com.aurapay.core.events.PaymentIntentCreatedEvent;
 import com.aurapay.core.events.PaymentProcessingEvent;
 import com.aurapay.core.events.PaymentSucceededEvent;
+import com.aurapay.core.events.RefundSucceededEvent;
 import com.aurapay.core.exception.AuraException;
 import com.aurapay.orchestrator.domain.OutboxEvent;
 import com.aurapay.orchestrator.domain.PaymentIntent;
@@ -72,6 +73,8 @@ public class PaymentEventFactory {
                 intent.getCurrency(),
                 cardLastFour != null ? cardLastFour : "****",
                 intent.getAuthorizationCode(),
+                intent.getCustomerEmail(),
+                intent.getDescription(),
                 intent.isTest()
         );
         return createOutboxEvent(intent.getId().toString(), event.getEventType(), event);
@@ -90,6 +93,22 @@ public class PaymentEventFactory {
                 intent.getCurrency(),
                 codeStr,
                 failureMessage != null ? failureMessage : intent.getFailureReason(),
+                intent.isTest()
+        );
+        return createOutboxEvent(intent.getId().toString(), event.getEventType(), event);
+    }
+
+    public OutboxEvent buildRefundSucceededOutboxEvent(PaymentIntent intent, String refundId, long refundAmountCents, String reason) {
+        String eventId = UUID.randomUUID().toString();
+        RefundSucceededEvent event = new RefundSucceededEvent(
+                eventId,
+                EventType.REFUND_SUCCEEDED.getTopicName(),
+                Instant.now(),
+                refundId,
+                intent.getId().toString(),
+                intent.getMerchantId().toString(),
+                refundAmountCents,
+                reason != null ? reason : "Merchant requested refund",
                 intent.isTest()
         );
         return createOutboxEvent(intent.getId().toString(), event.getEventType(), event);

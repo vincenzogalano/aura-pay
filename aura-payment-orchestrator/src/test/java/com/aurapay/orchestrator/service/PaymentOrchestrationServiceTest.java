@@ -6,12 +6,15 @@ import com.aurapay.orchestrator.client.BankSimulatorClient;
 import com.aurapay.orchestrator.client.VaultServiceClient;
 import com.aurapay.orchestrator.client.dto.BankAuthorizationRequest;
 import com.aurapay.orchestrator.client.dto.BankAuthorizationResponse;
+import com.aurapay.orchestrator.client.dto.BankRefundRequest;
+import com.aurapay.orchestrator.client.dto.BankRefundResponse;
 import com.aurapay.orchestrator.client.dto.VaultCardDetailsResponse;
 import com.aurapay.orchestrator.domain.OutboxEvent;
 import com.aurapay.orchestrator.domain.PaymentIntent;
 import com.aurapay.orchestrator.domain.enums.PaymentStatus;
 import com.aurapay.orchestrator.dto.request.ConfirmPaymentIntentRequest;
 import com.aurapay.orchestrator.dto.request.CreatePaymentIntentRequest;
+import com.aurapay.orchestrator.dto.request.RefundPaymentRequest;
 import com.aurapay.orchestrator.dto.response.PaymentIntentResponse;
 import com.aurapay.orchestrator.repository.OutboxEventRepository;
 import com.aurapay.orchestrator.repository.PaymentIntentRepository;
@@ -69,7 +72,7 @@ class PaymentOrchestrationServiceTest {
     @Test
     @DisplayName("createPaymentIntent - Dovrebbe salvare PaymentIntent ed OutboxEvent in stato CREATED")
     void createPaymentIntent_Success() {
-        CreatePaymentIntentRequest request = new CreatePaymentIntentRequest(merchantId, 10000L, "EUR", "E-commerce purchase", true);
+        CreatePaymentIntentRequest request = new CreatePaymentIntentRequest(merchantId, 10000L, "EUR", "E-commerce purchase", "test@customer.com", true);
 
         given(paymentIntentRepository.save(any(PaymentIntent.class))).willAnswer(invocation -> {
             PaymentIntent arg = invocation.getArgument(0);
@@ -88,6 +91,7 @@ class PaymentOrchestrationServiceTest {
         assertEquals(merchantId, response.merchantId());
         assertEquals(10000L, response.amountCents());
         assertEquals(PaymentStatus.CREATED, response.status());
+        assertEquals("test@customer.com", response.customerEmail());
         assertTrue(response.isTest());
 
         verify(outboxEventRepository).save(any(OutboxEvent.class));
@@ -102,6 +106,8 @@ class PaymentOrchestrationServiceTest {
                 .amountCents(10000L)
                 .currency("EUR")
                 .status(PaymentStatus.CREATED)
+                .customerEmail("test@customer.com")
+                .refundedAmountCents(0L)
                 .isTest(true)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
@@ -170,6 +176,35 @@ class PaymentOrchestrationServiceTest {
         assertNull(response.authorizationCode());
 
         verify(outboxEventRepository, atLeastOnce()).save(any(OutboxEvent.class));
+    }
+
+    @Test
+    @DisplayName("refundPayment - Success: Bank refund OK -> Status PARTIALLY_REFUNDED / REFUNDED")
+    void refundPayment_Success() {
+        PaymentIntent intent = PaymentIntent.builder()
+                .id(intentId)
+                .merchantId(merchantId)
+                .amountCents(10000L)
+                .currency("EUR")
+                .status(PaymentStatus.SUCCEEDED)
+                .transactionId("tx_bank_12345")
+                .refundedAmountCents(0L)
+                .isTest(true)
+                .build();
+
+        RefundPaymentRequest request = new RefundPaymentRequest(5000L, "Partial refund");
+
+        given(paymentIntentRepository.findById(intentId)).willReturn(Optional.of(intent));
+        given(bankSimulatorClient.refundPayment(any(BankRefundRequest.class)))
+                .willReturn(BankRefundResponse.ok("tx_ref_555"));
+        given(paymentIntentRepository.save(any(PaymentIntent.class))).willAnswer(i -> i.getArgument(0));
+        given(paymentEventFactory.buildRefundSucceededOutboxEvent(any(), any(), eq(5000L), any())).willReturn(new OutboxEvent());
+
+        PaymentIntentResponse response = paymentOrchestrationService.refundPayment(intentId, request);
+
+        assertEquals(PaymentStatus.PARTIALLY_REFUNDED, response.status());
+        assertEquals(5000L, response.refundedAmountCents());
+        verify(outboxEventRepository).save(any(OutboxEvent.class));
     }
 
     @Test

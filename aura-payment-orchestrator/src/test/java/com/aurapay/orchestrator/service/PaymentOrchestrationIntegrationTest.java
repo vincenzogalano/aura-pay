@@ -55,8 +55,7 @@ class PaymentOrchestrationIntegrationTest {
     @DisplayName("Transactional Outbox - Dovrebbe persistere atomicamente PaymentIntent ed OutboxEvent durante il ciclo di vita")
     void testTransactionalOutboxPersistence() {
         UUID merchantId = UUID.randomUUID();
-        CreatePaymentIntentRequest createReq = new CreatePaymentIntentRequest(merchantId, 5000L, "EUR", "Test Outbox", true);
-
+        CreatePaymentIntentRequest createReq = new CreatePaymentIntentRequest(merchantId, 5000L, "EUR", "Test Outbox", "customer@test.com", true);
 
         PaymentIntentResponse createdResponse = paymentOrchestrationService.createPaymentIntent(createReq);
         assertNotNull(createdResponse);
@@ -68,7 +67,6 @@ class PaymentOrchestrationIntegrationTest {
         assertEquals(createdResponse.id().toString(), outboxAfterCreate.get(0).getAggregateId());
         assertFalse(outboxAfterCreate.get(0).isProcessed());
 
-
         VaultCardDetailsResponse cardDetails = new VaultCardDetailsResponse(
                 "4532011111111111", "Jane Doe", 11, 2029, "456", "453201******1111", "VISA", true
         );
@@ -76,7 +74,6 @@ class PaymentOrchestrationIntegrationTest {
 
         BankAuthorizationResponse bankResponse = BankAuthorizationResponse.approved("tx_bank_999", "AUTH_111");
         given(bankSimulatorClient.authorizePayment(any(BankAuthorizationRequest.class))).willReturn(bankResponse);
-
 
         ConfirmPaymentIntentRequest confirmReq = new ConfirmPaymentIntentRequest("tok_4532011111111111");
         PaymentIntentResponse confirmedResponse = paymentOrchestrationService.confirmPayment(createdResponse.id(), confirmReq);

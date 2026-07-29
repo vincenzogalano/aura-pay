@@ -7,12 +7,15 @@ import com.aurapay.orchestrator.client.BankSimulatorClient;
 import com.aurapay.orchestrator.client.VaultServiceClient;
 import com.aurapay.orchestrator.client.dto.BankAuthorizationRequest;
 import com.aurapay.orchestrator.client.dto.BankAuthorizationResponse;
+import com.aurapay.orchestrator.client.dto.BankRefundRequest;
+import com.aurapay.orchestrator.client.dto.BankRefundResponse;
 import com.aurapay.orchestrator.client.dto.VaultCardDetailsResponse;
 import com.aurapay.orchestrator.domain.OutboxEvent;
 import com.aurapay.orchestrator.domain.PaymentIntent;
 import com.aurapay.orchestrator.domain.enums.PaymentStatus;
 import com.aurapay.orchestrator.dto.request.ConfirmPaymentIntentRequest;
 import com.aurapay.orchestrator.dto.request.CreatePaymentIntentRequest;
+import com.aurapay.orchestrator.dto.request.RefundPaymentRequest;
 import com.aurapay.orchestrator.dto.response.PaymentIntentResponse;
 import com.aurapay.orchestrator.repository.OutboxEventRepository;
 import com.aurapay.orchestrator.repository.PaymentIntentRepository;
@@ -43,6 +46,8 @@ public class PaymentOrchestrationService {
                 .amountCents(request.amountCents())
                 .currency(request.currency() != null ? request.currency() : "EUR")
                 .description(request.description())
+                .customerEmail(request.customerEmail())
+                .refundedAmountCents(0L)
                 .isTest(request.isTest() != null ? request.isTest() : true)
                 .status(PaymentStatus.CREATED)
                 .build();
@@ -136,6 +141,78 @@ public class PaymentOrchestrationService {
         }
     }
 
+    @Transactional
+    public PaymentIntentResponse refundPayment(UUID id, RefundPaymentRequest request) {
+        log.info("Processing refund for PaymentIntent id: {}, amountCents: {}", id, request.amountCents());
+
+        PaymentIntent intent = paymentIntentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("PaymentIntent with id '" + id + "' not found"));
+
+        if (intent.getStatus() != PaymentStatus.SUCCEEDED && intent.getStatus() != PaymentStatus.PARTIALLY_REFUNDED) {
+            throw new DomainRuleViolationException("Cannot refund PaymentIntent in state: " + intent.getStatus());
+        }
+
+        long alreadyRefunded = intent.getRefundedAmountCents() != null ? intent.getRefundedAmountCents() : 0L;
+        long maxRefundable = intent.getAmountCents() - alreadyRefunded;
+
+        if (request.amountCents() <= 0 || request.amountCents() > maxRefundable) {
+            throw new DomainRuleViolationException("Refund amount (" + request.amountCents() + " cents) exceeds maximum refundable (" + maxRefundable + " cents)");
+        }
+
+        String origTxId = intent.getTransactionId() != null ? intent.getTransactionId() : "tx_bank_mock";
+        BankRefundRequest bankReq = new BankRefundRequest(
+                origTxId,
+                intent.getMerchantId(),
+                request.amountCents(),
+                request.reason()
+        );
+
+        BankRefundResponse bankResp = bankSimulatorClient.refundPayment(bankReq);
+
+        if (!bankResp.success()) {
+            log.warn("Bank refund declined for PaymentIntent {}: {}", id, bankResp.responseCode());
+            throw new DomainRuleViolationException("Bank declined refund request: " + bankResp.responseCode());
+        }
+
+        long newRefunded = alreadyRefunded + request.amountCents();
+        intent.setRefundedAmountCents(newRefunded);
+
+        if (newRefunded >= intent.getAmountCents()) {
+            intent.setStatus(PaymentStatus.REFUNDED);
+        } else {
+            intent.setStatus(PaymentStatus.PARTIALLY_REFUNDED);
+        }
+
+        PaymentIntent savedIntent = paymentIntentRepository.save(intent);
+
+        String refundId = bankResp.refundTransactionId() != null
+                ? bankResp.refundTransactionId()
+                : "ref_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+
+        OutboxEvent refundOutboxEvent = paymentEventFactory.buildRefundSucceededOutboxEvent(
+                savedIntent,
+                refundId,
+                request.amountCents(),
+                request.reason()
+        );
+        outboxEventRepository.save(refundOutboxEvent);
+
+        log.info("Successfully refunded {} cents for PaymentIntent id: {}. New status: {}", request.amountCents(), id, savedIntent.getStatus());
+        return PaymentIntentResponse.fromEntity(savedIntent);
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<PaymentIntentResponse> getPayments(Boolean isTest) {
+        log.info("Fetching all PaymentIntents with isTest={}", isTest);
+        java.util.List<PaymentIntent> list;
+        if (isTest != null) {
+            list = paymentIntentRepository.findByIsTestOrderByCreatedAtDesc(isTest);
+        } else {
+            list = paymentIntentRepository.findAll();
+        }
+        return list.stream().map(PaymentIntentResponse::fromEntity).toList();
+    }
+
     @Transactional(readOnly = true)
     public PaymentIntentResponse getPaymentById(UUID id) {
         log.info("Fetching PaymentIntent by id: {}", id);
@@ -175,4 +252,3 @@ public class PaymentOrchestrationService {
         return "****";
     }
 }
-

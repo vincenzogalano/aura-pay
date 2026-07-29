@@ -37,6 +37,8 @@ class EventSerializationTest {
                 "EUR",
                 "1111",
                 "AUTH_CODE_888",
+                "test@customer.com",
+                "Abbonamento SaaS",
                 true
         );
 
@@ -45,7 +47,8 @@ class EventSerializationTest {
         assertThat(json)
                 .contains("aura.payment.succeeded.v1")
                 .contains("pi_99887766")
-                .contains("mch_12345");
+                .contains("mch_12345")
+                .contains("test@customer.com");
 
         PaymentSucceededEvent deserializedEvent = objectMapper.readValue(json, PaymentSucceededEvent.class);
 

@@ -75,6 +75,8 @@ class InvoiceServiceTest {
                 "EUR",
                 "1111",
                 "AUTH_123456",
+                "customer@test.com",
+                "Acquisto Prodotto",
                 true
         );
 
@@ -119,6 +121,8 @@ class InvoiceServiceTest {
                 "EUR",
                 "1111",
                 "AUTH_123456",
+                "customer@test.com",
+                "Acquisto Prodotto",
                 true
         );
 

@@ -45,6 +45,12 @@ public class Invoice {
     @Column(name = "refund_id")
     private UUID refundId;
 
+    @Column(name = "customer_email", length = 255)
+    private String customerEmail;
+
+    @Column(name = "description", length = 255)
+    private String description;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "invoice_type", nullable = false, length = 20)
     private InvoiceType invoiceType;
