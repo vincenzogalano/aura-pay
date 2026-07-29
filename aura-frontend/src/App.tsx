@@ -10,12 +10,13 @@ import { InvoicesPage } from './pages/InvoicesPage';
 import { WebhooksPage } from './pages/WebhooksPage';
 import { CheckoutSimulatorPage } from './pages/CheckoutSimulatorPage';
 import { DeveloperConsolePage } from './pages/DeveloperConsolePage';
+import { EventStreamPage } from './pages/EventStreamPage';
 import { Toaster } from 'sonner';
 
 export const App: React.FC = () => {
   return (
     <MerchantProvider>
-      <Toaster position="top-right" theme="dark" richColors />
+      <Toaster position="top-right" theme="light" richColors />
       <HashRouter>
         <Routes>
           <Route path="/" element={<DashboardLayout />}>
@@ -28,6 +29,7 @@ export const App: React.FC = () => {
             <Route path="webhooks" element={<WebhooksPage />} />
             <Route path="checkout-demo" element={<CheckoutSimulatorPage />} />
             <Route path="developer" element={<DeveloperConsolePage />} />
+            <Route path="event-stream" element={<EventStreamPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Routes>

@@ -1,6 +1,37 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { Merchant, ApiKey } from '../types';
-import { mockMerchant, mockApiKeys } from '../api/mockData';
+import { merchantApi } from '../api/merchantApi';
+
+const defaultMerchant: Merchant = {
+  id: 'mch_acme_tech_2026',
+  businessName: 'Acme Tech Solutions S.r.l.',
+  vatNumber: 'IT12345678901',
+  email: 'amministrazione@acmetech.it',
+  status: 'VERIFIED',
+  country: 'Italia',
+  createdAt: new Date().toISOString(),
+};
+
+const defaultKeys: ApiKey[] = [
+  {
+    id: 'key_test_01',
+    merchantId: 'mch_acme_tech_2026',
+    keyPrefix: 'sk_test_a1b2',
+    environment: 'TEST',
+    revokedAt: null,
+    createdAt: new Date().toISOString(),
+    keySecret: 'sk_test_demo_key_aurapay_2026_sandbox',
+  },
+  {
+    id: 'key_live_01',
+    merchantId: 'mch_acme_tech_2026',
+    keyPrefix: 'sk_live_99zz',
+    environment: 'LIVE',
+    revokedAt: null,
+    createdAt: new Date().toISOString(),
+    keySecret: 'sk_live_demo_key_aurapay_2026_production',
+  },
+];
 
 interface MerchantContextType {
   merchant: Merchant;
@@ -17,37 +48,33 @@ interface MerchantContextType {
 const MerchantContext = createContext<MerchantContextType | undefined>(undefined);
 
 export const MerchantProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [merchant, setMerchant] = useState<Merchant>(() => {
-    const saved = localStorage.getItem('aurapay_merchant');
-    return saved ? JSON.parse(saved) : mockMerchant;
-  });
+  const [merchant, setMerchant] = useState<Merchant>(defaultMerchant);
 
   const [isTest, setIsTest] = useState<boolean>(() => {
     const savedMode = localStorage.getItem('aurapay_is_test');
     return savedMode !== null ? JSON.parse(savedMode) : true;
   });
 
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>(() => {
-    const savedKeys = localStorage.getItem('aurapay_api_keys');
-    return savedKeys ? JSON.parse(savedKeys) : mockApiKeys;
-  });
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>(defaultKeys);
 
-  // Trova la prima API Key attiva per l'ambiente corrente
-  const activeKeyObj = apiKeys.find(k => k.environment === (isTest ? 'TEST' : 'LIVE') && !k.revokedAt);
-  const activeApiKey = activeKeyObj?.keySecret || activeKeyObj?.keyPrefix || (isTest ? 'sk_test_mock' : 'sk_live_mock');
-
+  // Carica i dati reali del merchant dall'API Backend
   useEffect(() => {
-    localStorage.setItem('aurapay_merchant', JSON.stringify(merchant));
-  }, [merchant]);
+    merchantApi.getMerchantProfile('mch_acme_tech_2026')
+      .then((data) => setMerchant(data))
+      .catch(() => {});
+
+    merchantApi.getApiKeys('mch_acme_tech_2026')
+      .then((keys) => setApiKeys(keys))
+      .catch(() => {});
+  }, []);
+
+  const activeKeyObj = apiKeys.find(k => k.environment === (isTest ? 'TEST' : 'LIVE') && !k.revokedAt);
+  const activeApiKey = activeKeyObj?.keySecret || activeKeyObj?.keyPrefix || (isTest ? 'sk_test_a1b2' : 'sk_live_99zz');
 
   useEffect(() => {
     localStorage.setItem('aurapay_is_test', JSON.stringify(isTest));
     localStorage.setItem('aurapay_active_api_key', activeApiKey);
   }, [isTest, activeApiKey]);
-
-  useEffect(() => {
-    localStorage.setItem('aurapay_api_keys', JSON.stringify(apiKeys));
-  }, [apiKeys]);
 
   const toggleEnvironment = (mode?: boolean) => {
     const next = mode !== undefined ? mode : !isTest;
@@ -66,8 +93,13 @@ export const MerchantProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setApiKeys(prev => [key, ...prev]);
   };
 
-  const revokeApiKey = (keyId: string) => {
+  const revokeApiKey = async (keyId: string) => {
     setApiKeys(prev => prev.map(k => k.id === keyId ? { ...k, revokedAt: new Date().toISOString() } : k));
+    try {
+      await merchantApi.revokeApiKey(merchant.id, keyId);
+    } catch (err) {
+      console.error("Errore durante la revoca della chiave API nel backend:", err);
+    }
   };
 
   return (

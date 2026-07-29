@@ -5,7 +5,7 @@ import { Header } from './Header';
 
 export const DashboardLayout: React.FC = () => {
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100">
+    <div className="flex min-h-screen bg-white text-zinc-900">
       {/* Sidebar Navigation */}
       <Sidebar />
 
@@ -14,7 +14,7 @@ export const DashboardLayout: React.FC = () => {
         <Header />
         
         {/* Page Container */}
-        <main className="flex-1 p-6 md:p-8 overflow-y-auto bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900/60 via-slate-950 to-slate-950">
+        <main className="flex-1 p-6 md:p-8 overflow-y-auto bg-white">
           <div className="max-w-7xl mx-auto space-y-8">
             <Outlet />
           </div>

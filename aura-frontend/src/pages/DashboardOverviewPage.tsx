@@ -7,11 +7,9 @@ import {
   TrendingUp, 
   Wallet, 
   CreditCard, 
-  ArrowUpRight, 
   CheckCircle2, 
   XCircle, 
-  RefreshCw,
-  Sparkles
+  RefreshCw
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -38,12 +36,10 @@ export const DashboardOverviewPage: React.FC = () => {
     fetchData();
   }, [merchant.id, isTest]);
 
-  // Formattazione Valuta in Euro (€)
   const formatCurrency = (cents: number) => {
     return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(cents / 100);
   };
 
-  // Formattazione Data
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('it-IT', {
       day: '2-digit',
@@ -53,7 +49,6 @@ export const DashboardOverviewPage: React.FC = () => {
     });
   };
 
-  // Calcoli metriche generali
   const totalVolumeCents = payments
     .filter((p) => p.status === 'SUCCEEDED')
     .reduce((acc, p) => acc + p.amountCents, 0);
@@ -62,7 +57,6 @@ export const DashboardOverviewPage: React.FC = () => {
   const succeededCount = payments.filter((p) => p.status === 'SUCCEEDED').length;
   const approvalRate = totalTransactions > 0 ? Math.round((succeededCount / totalTransactions) * 100) : 100;
 
-  // Dati per il grafico degli ultimi 7 giorni
   const chartData = [
     { day: '19 Lug', volume: 140 },
     { day: '20 Lug', volume: 220 },
@@ -75,166 +69,122 @@ export const DashboardOverviewPage: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-fadeIn">
-      {/* Top Banner & Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
-            <span>Panoramica Merchant</span>
-            {isTest ? (
-              <span className="text-xs font-semibold px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                Ambiente Sandbox (Test)
-              </span>
-            ) : (
-              <span className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Ambiente Produzione (Live)
-              </span>
-            )}
-          </h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Monitora i saldi del Ledger in tempo reale, i volumi transati e le metriche di conversione.
-          </p>
-        </div>
+      {/* Title */}
+      <div className="border-b border-zinc-200 pb-5">
+        <h1 className="text-xl font-bold text-zinc-900 tracking-tight">
+          Panoramica Attività
+        </h1>
+        <p className="text-zinc-500 text-xs mt-0.5">
+          Monitoraggio saldi Ledger, volumi processati e tasso di autorizzazione bancaria.
+        </p>
       </div>
 
-      {/* Metric Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      {/* Metric Cards Grid (Shadcn Light style) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Saldo Disponibile */}
-        <div className="glass-panel p-5 space-y-3 relative overflow-hidden group hover:border-indigo-500/50 transition-all duration-300">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold uppercase tracking-wider">Saldo Disponibile (Ledger)</span>
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
-              <Wallet className="w-4 h-4" />
-            </div>
+        <div className="p-5 rounded-lg bg-white border border-zinc-200 shadow-xs space-y-2">
+          <div className="flex items-center justify-between text-zinc-500">
+            <span className="text-xs font-semibold uppercase tracking-wider">Saldo Disponibile</span>
+            <Wallet className="w-4 h-4 text-zinc-400" />
           </div>
-          <div className="text-2xl lg:text-3xl font-extrabold text-white font-mono tracking-tight">
+          <div className="text-2xl font-bold text-zinc-900 font-mono">
             {loading ? '...' : formatCurrency(balance?.availableBalanceCents || 0)}
           </div>
-          <div className="text-[11px] text-slate-400 flex items-center gap-1">
-            <span className="text-emerald-400 font-semibold flex items-center">
-              <ArrowUpRight className="w-3.5 h-3.5" />
-              +12.4%
-            </span>
-            <span>rispetto alla settimana precedente</span>
-          </div>
+          <p className="text-[11px] text-zinc-500">Aggiornato dal Ledger contabile</p>
         </div>
 
         {/* Card 2: Volume Processato */}
-        <div className="glass-panel p-5 space-y-3 relative overflow-hidden group hover:border-indigo-500/50 transition-all duration-300">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="p-5 rounded-lg bg-white border border-zinc-200 shadow-xs space-y-2">
+          <div className="flex items-center justify-between text-zinc-500">
             <span className="text-xs font-semibold uppercase tracking-wider">Volume Processato</span>
-            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-400 border border-cyan-500/20">
-              <TrendingUp className="w-4 h-4" />
-            </div>
+            <TrendingUp className="w-4 h-4 text-zinc-400" />
           </div>
-          <div className="text-2xl lg:text-3xl font-extrabold text-white font-mono tracking-tight">
+          <div className="text-2xl font-bold text-zinc-900 font-mono">
             {loading ? '...' : formatCurrency(totalVolumeCents)}
           </div>
-          <div className="text-[11px] text-slate-400">Totale pagamenti autorizzati</div>
+          <p className="text-[11px] text-zinc-500">Totale pagamenti autorizzati</p>
         </div>
 
         {/* Card 3: Transazioni Totali */}
-        <div className="glass-panel p-5 space-y-3 relative overflow-hidden group hover:border-indigo-500/50 transition-all duration-300">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="p-5 rounded-lg bg-white border border-zinc-200 shadow-xs space-y-2">
+          <div className="flex items-center justify-between text-zinc-500">
             <span className="text-xs font-semibold uppercase tracking-wider">Transazioni Totali</span>
-            <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-400 border border-purple-500/20">
-              <CreditCard className="w-4 h-4" />
-            </div>
+            <CreditCard className="w-4 h-4 text-zinc-400" />
           </div>
-          <div className="text-2xl lg:text-3xl font-extrabold text-white font-mono tracking-tight">
+          <div className="text-2xl font-bold text-zinc-900 font-mono">
             {loading ? '...' : totalTransactions}
           </div>
-          <div className="text-[11px] text-slate-400">Numero complessivo di tentativi</div>
+          <p className="text-[11px] text-zinc-500">Numero complessivo tentativi</p>
         </div>
 
         {/* Card 4: Tasso di Approvazione */}
-        <div className="glass-panel p-5 space-y-3 relative overflow-hidden group hover:border-indigo-500/50 transition-all duration-300">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="p-5 rounded-lg bg-white border border-zinc-200 shadow-xs space-y-2">
+          <div className="flex items-center justify-between text-zinc-500">
             <span className="text-xs font-semibold uppercase tracking-wider">Tasso di Approvazione</span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
-              <CheckCircle2 className="w-4 h-4" />
-            </div>
+            <CheckCircle2 className="w-4 h-4 text-zinc-400" />
           </div>
-          <div className="text-2xl lg:text-3xl font-extrabold text-white font-mono tracking-tight">
+          <div className="text-2xl font-bold text-zinc-900 font-mono">
             {loading ? '...' : `${approvalRate}%`}
           </div>
-          <div className="text-[11px] text-slate-400">Conversione autorizzazioni bancarie</div>
+          <div className="text-[11px] text-zinc-500">Conversione autorizzazioni</div>
         </div>
       </div>
 
       {/* Chart & Recent Activity Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recharts Volume Chart */}
-        <div className="glass-panel p-6 lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-            <div>
-              <h2 className="text-base font-bold text-white">Andamento Volumi Incassati</h2>
-              <p className="text-xs text-slate-400">Ultimi 7 giorni di attività</p>
-            </div>
-            <span className="text-xs font-mono text-indigo-400 font-semibold">Valori in EUR (€)</span>
+        <div className="p-5 rounded-lg bg-white border border-zinc-200 shadow-xs lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
+            <h2 className="text-sm font-semibold text-zinc-900">Andamento Volumi</h2>
+            <span className="text-xs font-mono text-zinc-500">Valori in EUR (€)</span>
           </div>
 
-          <div className="h-64 w-full pt-4">
+          <div className="h-60 w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <defs>
                   <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#18181b" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#18181b" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="day" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(val) => `€${val}`} />
+                <XAxis dataKey="day" stroke="#a1a1aa" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="#a1a1aa" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(val) => `€${val}`} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#090d16', borderColor: '#334155', borderRadius: '12px', fontSize: '12px' }}
+                  contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e4e4e7', borderRadius: '8px', fontSize: '12px', color: '#09090b', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                   formatter={(val: any) => [`€ ${Number(val || 0).toFixed(2)}`, 'Volume Incassato']}
                 />
-                <Area type="monotone" dataKey="volume" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorVolume)" />
+                <Area type="monotone" dataKey="volume" stroke="#18181b" strokeWidth={2} fillOpacity={1} fill="url(#colorVolume)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Ultime Transazioni Table Summary */}
-        <div className="glass-panel p-6 space-y-4 flex flex-col justify-between">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h2 className="text-base font-bold text-white">Ultime Transazioni</h2>
-              <span className="text-xs text-slate-400">Aggiornato ora</span>
-            </div>
+        <div className="p-5 rounded-lg bg-white border border-zinc-200 shadow-xs space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
+            <h2 className="text-sm font-semibold text-zinc-900">Ultime Transazioni</h2>
+          </div>
 
-            <div className="space-y-3">
-              {payments.slice(0, 4).map((p) => (
-                <div key={p.id} className="p-3 rounded-xl bg-slate-900/50 border border-slate-800/80 flex items-center justify-between text-xs hover:border-slate-700 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                      p.status === 'SUCCEEDED' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                      p.status === 'FAILED' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
-                      'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                    }`}>
-                      {p.status === 'SUCCEEDED' ? <CheckCircle2 className="w-4 h-4" /> :
-                       p.status === 'FAILED' ? <XCircle className="w-4 h-4" /> :
-                       <RefreshCw className="w-4 h-4" />}
-                    </div>
-                    <div>
-                      <div className="font-semibold text-slate-200 truncate max-w-[130px]">{p.description || 'Pagamento online'}</div>
-                      <div className="text-[10px] text-slate-400">{formatDate(p.createdAt)}</div>
-                    </div>
+          <div className="space-y-2.5">
+            {payments.slice(0, 4).map((p) => (
+              <div key={p.id} className="p-3 rounded border border-zinc-200 bg-zinc-50 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2.5">
+                  <div>
+                    {p.status === 'SUCCEEDED' ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> :
+                     p.status === 'FAILED' ? <XCircle className="w-4 h-4 text-rose-600" /> :
+                     <RefreshCw className="w-4 h-4 text-amber-600" />}
                   </div>
-                  <div className="text-right">
-                    <div className="font-mono font-bold text-slate-100">{formatCurrency(p.amountCents)}</div>
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                      p.status === 'SUCCEEDED' ? 'bg-emerald-500/10 text-emerald-400' :
-                      p.status === 'FAILED' ? 'bg-rose-500/10 text-rose-400' :
-                      'bg-amber-500/10 text-amber-400'
-                    }`}>
-                      {p.status === 'SUCCEEDED' ? 'APPROVATO' : p.status === 'FAILED' ? 'RIFIUTATO' : 'RIMBORSATO'}
-                    </span>
+                  <div>
+                    <div className="font-medium text-zinc-900 truncate max-w-[130px]">{p.description || 'Pagamento online'}</div>
+                    <div className="text-[10px] text-zinc-500">{formatDate(p.createdAt)}</div>
                   </div>
                 </div>
-              ))}
-            </div>
+                <div className="text-right">
+                  <div className="font-mono font-bold text-zinc-900">{formatCurrency(p.amountCents)}</div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

@@ -1,242 +1,188 @@
 import React, { useState } from 'react';
 import { useMerchant } from '../context/MerchantContext';
 import { merchantApi } from '../api/merchantApi';
+import type { ApiKey } from '../types';
 import { 
   Copy, 
+  Check, 
   Eye, 
   EyeOff, 
-  ShieldAlert, 
-  ShieldCheck, 
-  Trash2, 
-  Plus, 
-  Check 
+  Plus
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const ApiKeysPage: React.FC = () => {
   const { merchant, apiKeys, addApiKey, revokeApiKey } = useMerchant();
-  const [revealedKeys, setRevealedKeys] = useState<Record<string, boolean>>({});
-  const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
+  const [visibleKeys, setVisibleKeys] = useState<Record<string, boolean>>({});
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [generating, setGenerating] = useState<boolean>(false);
 
-  const toggleReveal = (id: string) => {
-    setRevealedKeys(prev => ({ ...prev, [id]: !prev[id] }));
+  const toggleVisibility = (id: string) => {
+    setVisibleKeys(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const handleCopy = (id: string, text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedKeyId(id);
-    toast.success('Chiave API copiata negli appunti!');
-    setTimeout(() => setCopiedKeyId(null), 2000);
+  const copyToClipboard = (keySecret: string, id: string) => {
+    navigator.clipboard.writeText(keySecret);
+    setCopiedId(id);
+    toast.success('Chiave API copiata!');
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleGenerateTestKey = async () => {
+    setGenerating(true);
+    try {
+      const newKeys = await merchantApi.generateTestKeys(merchant.id);
+      if (Array.isArray(newKeys)) {
+        newKeys.forEach(k => addApiKey(k));
+      } else if (newKeys) {
+        addApiKey(newKeys);
+      }
+      toast.success('Nuova coppia di API Keys TEST generata!');
+    } catch (err) {
+      toast.error('Errore durante la generazione della chiave TEST');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleGenerateLiveKey = async () => {
+    if (merchant.status !== 'VERIFIED') {
+      toast.error('Devi completare la verifica KYB prima di generare chiavi LIVE!');
+      return;
+    }
+    setGenerating(true);
+    try {
+      const newKeys = await merchantApi.generateLiveKeys(merchant.id);
+      if (Array.isArray(newKeys)) {
+        newKeys.forEach(k => addApiKey(k));
+      } else if (newKeys) {
+        addApiKey(newKeys);
+      }
+      toast.success('Nuova coppia di API Keys LIVE generata!');
+    } catch (err) {
+      toast.error('Errore durante la generazione della chiave LIVE');
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const handleRevoke = (id: string) => {
-    if (confirm('Sei sicuro di voler revocare questa API Key? I client che la usano perderanno l\'accesso.')) {
-      revokeApiKey(id);
-      toast.warning('API Key revocata.');
-    }
+    revokeApiKey(id);
+    toast.info('API Key revocata.');
   };
-
-  const handleGenerateLive = async () => {
-    if (merchant.status !== 'VERIFIED') {
-      toast.error('Devi prima completare la verifica KYB per generare chiavi LIVE.');
-      return;
-    }
-    try {
-      const newKey = await merchantApi.generateLiveKeys(merchant.id);
-      addApiKey(newKey);
-      toast.success('Nuova API Key LIVE generata con successo!');
-    } catch (err) {
-      toast.error('Errore durante la generazione della chiave LIVE');
-    }
-  };
-
-  const sandboxKeys = apiKeys.filter(k => k.environment === 'TEST');
-  const liveKeys = apiKeys.filter(k => k.environment === 'LIVE');
 
   return (
-    <div className="space-y-8 animate-fadeIn">
+    <div className="space-y-6 max-w-5xl animate-fadeIn">
       {/* Title */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
-            Gestione API Keys
+          <h1 className="text-xl font-bold text-zinc-100 tracking-tight">
+            Gestione Chiavi API
           </h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Gestisci le credenziali di autenticazione Server-to-Server per gli ambienti Sandbox e Live.
+          <p className="text-zinc-400 text-xs mt-0.5">
+            Genera e gestisci le tue chiavi segrete TEST e LIVE per l'autenticazione delle richieste API Gateway.
           </p>
         </div>
 
-        <button
-          onClick={handleGenerateLive}
-          disabled={merchant.status !== 'VERIFIED'}
-          className="btn-primary text-xs flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Genera Nuova Chiave LIVE</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleGenerateTestKey}
+            disabled={generating}
+            className="btn-shadcn-secondary text-xs font-semibold px-3 py-2 inline-flex items-center gap-1.5 disabled:opacity-50"
+          >
+            <Plus className="w-4 h-4 text-amber-400" />
+            <span>Genera Chiavi TEST</span>
+          </button>
+
+          <button
+            onClick={handleGenerateLiveKey}
+            disabled={generating || merchant.status !== 'VERIFIED'}
+            className="btn-shadcn-primary text-xs font-semibold px-3 py-2 inline-flex items-center gap-1.5 disabled:opacity-50"
+          >
+            <Plus className="w-4 h-4 text-emerald-400" />
+            <span>{generating ? 'Generazione...' : 'Genera Chiavi LIVE'}</span>
+          </button>
+        </div>
       </div>
 
-      {/* Sandbox Keys Section */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <ShieldAlert className="w-5 h-5 text-amber-400" />
-          <h2 className="text-lg font-bold text-white">Chiavi API Sandbox (Test)</h2>
-        </div>
-
-        <div className="glass-panel overflow-hidden">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-900/50">
-                <th className="py-4 px-6">Prefisso Chiave</th>
-                <th className="py-4 px-6">Secret / Masked Key</th>
-                <th className="py-4 px-6">Stato</th>
-                <th className="py-4 px-6">Data Creazione</th>
-                <th className="py-4 px-6 text-right">Azioni</th>
+      {/* Keys Table (Shadcn style) */}
+      <div className="rounded-lg border border-zinc-800 overflow-hidden bg-zinc-950">
+        <table className="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr className="border-b border-zinc-800 text-[11px] font-semibold text-zinc-400 uppercase tracking-wider bg-zinc-900/60">
+              <th className="py-3 px-4">Ambiente</th>
+              <th className="py-3 px-4">Tipo</th>
+              <th className="py-3 px-4">Prefisso / Valore</th>
+              <th className="py-3 px-4">Data Creazione</th>
+              <th className="py-3 px-4 text-right">Azioni</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-zinc-800/60">
+            {apiKeys.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="py-8 text-center text-zinc-500">
+                  Nessuna chiave API presente. Genera una chiave TEST o LIVE per iniziare.
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60 text-xs font-mono">
-              {sandboxKeys.map((key) => {
-                const isRevealed = revealedKeys[key.id];
-                const displaySecret = key.keySecret || `${key.keyPrefix}••••••••••••••••••••••••`;
-                const isCopied = copiedKeyId === key.id;
+            ) : (
+              apiKeys.map((key: ApiKey) => {
+                const isVisible = !!visibleKeys[key.id];
+                const displaySecret = isVisible ? (key.keySecret || key.rawKey || key.keyPrefix) : `${key.keyPrefix}_••••••••••••••••••••`;
+                const isRevoked = !!key.revokedAt;
 
                 return (
-                  <tr key={key.id} className="hover:bg-slate-900/40 transition-colors">
-                    <td className="py-4 px-6 text-amber-400 font-bold">{key.keyPrefix}</td>
-                    <td className="py-4 px-6 text-slate-300">
-                      {isRevealed ? displaySecret : `${key.keyPrefix}••••••••••••••••••••••••`}
+                  <tr key={key.id} className="hover:bg-zinc-900/40 transition-colors">
+                    <td className="py-3.5 px-4">
+                      <span className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded border ${
+                        key.environment === 'TEST' ? 'bg-amber-950 text-amber-400 border-amber-800' : 'bg-emerald-950 text-emerald-400 border-emerald-800'
+                      }`}>
+                        {key.environment}
+                      </span>
                     </td>
-                    <td className="py-4 px-6 font-sans">
-                      {key.revokedAt ? (
-                        <span className="text-[10px] text-rose-400 font-semibold bg-rose-500/10 border border-rose-500/20 px-2.5 py-0.5 rounded-full">REVOCATA</span>
-                      ) : (
-                        <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">ATTIVA</span>
-                      )}
+                    <td className="py-3.5 px-4 font-mono text-zinc-400">
+                      {key.keyType || (key.keyPrefix?.startsWith('pk') ? 'PUBLIC' : 'SECRET')}
                     </td>
-                    <td className="py-4 px-6 text-slate-400 font-sans">
-                      {new Date(key.createdAt).toLocaleDateString()}
+                    <td className="py-3.5 px-4 font-mono text-zinc-200">
+                      {isRevoked ? <span className="line-through text-zinc-600">{displaySecret}</span> : displaySecret}
                     </td>
-                    <td className="py-4 px-6 text-right font-sans space-x-2">
-                      <button
-                        onClick={() => toggleReveal(key.id)}
-                        className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
-                        title={isRevealed ? 'Nascondi' : 'Mostra'}
-                      >
-                        {isRevealed ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
+                    <td className="py-3.5 px-4 text-zinc-400">
+                      {key.createdAt ? new Date(key.createdAt).toLocaleDateString('it-IT') : 'Oggi'}
+                    </td>
+                    <td className="py-3.5 px-4 text-right space-x-2">
+                      {!isRevoked && (
+                        <>
+                          <button
+                            onClick={() => toggleVisibility(key.id)}
+                            className="p-1.5 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300"
+                            title={isVisible ? 'Nascondi' : 'Mostra'}
+                          >
+                            {isVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
 
-                      <button
-                        onClick={() => handleCopy(key.id, displaySecret)}
-                        className="p-1.5 rounded-lg bg-indigo-900/40 hover:bg-indigo-900/60 text-indigo-300 border border-indigo-700/50 transition-colors"
-                        title="Copia negli appunti"
-                      >
-                        {isCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                      </button>
+                          <button
+                            onClick={() => copyToClipboard(key.keySecret || key.rawKey || key.keyPrefix, key.id)}
+                            className="p-1.5 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300"
+                            title="Copia"
+                          >
+                            {copiedId === key.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                          </button>
 
-                      {!key.revokedAt && (
-                        <button
-                          onClick={() => handleRevoke(key.id)}
-                          className="p-1.5 rounded-lg bg-rose-900/40 hover:bg-rose-900/60 text-rose-300 border border-rose-700/50 transition-colors"
-                          title="Revoca Chiave"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                          <button
+                            onClick={() => handleRevoke(key.id)}
+                            className="px-2.5 py-1 rounded bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800 text-xs transition-colors"
+                          >
+                            Revoca
+                          </button>
+                        </>
                       )}
+                      {isRevoked && <span className="text-xs text-rose-500 font-medium">Revocata</span>}
                     </td>
                   </tr>
                 );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Live Keys Section */}
-      <div className="space-y-4 pt-4 border-t border-slate-800">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-emerald-400" />
-          <h2 className="text-lg font-bold text-white">Chiavi API LIVE (Denaro Reale)</h2>
-        </div>
-
-        {merchant.status !== 'VERIFIED' ? (
-          <div className="glass-panel p-8 text-center space-y-3 border border-amber-500/30">
-            <ShieldAlert className="w-8 h-8 text-amber-400 mx-auto" />
-            <h3 className="text-base font-bold text-white">Ambiente LIVE Bloccato</h3>
-            <p className="text-xs text-slate-400 max-w-md mx-auto">
-              Per accedere ed immettere chiavi API LIVE devi prima completare l'onboarding ed il form di verifica KYB.
-            </p>
-            <a href="#/onboarding" className="btn-primary inline-block text-xs font-semibold px-4 py-2 mt-2">
-              Vai all'Onboarding & KYB →
-            </a>
-          </div>
-        ) : (
-          <div className="glass-panel overflow-hidden">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-900/50">
-                  <th className="py-4 px-6">Prefisso Chiave</th>
-                  <th className="py-4 px-6">Secret / Masked Key</th>
-                  <th className="py-4 px-6">Stato</th>
-                  <th className="py-4 px-6">Data Creazione</th>
-                  <th className="py-4 px-6 text-right">Azioni</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60 text-xs font-mono">
-                {liveKeys.map((key) => {
-                  const isRevealed = revealedKeys[key.id];
-                  const displaySecret = key.keySecret || `${key.keyPrefix}••••••••••••••••••••••••`;
-                  const isCopied = copiedKeyId === key.id;
-
-                  return (
-                    <tr key={key.id} className="hover:bg-slate-900/40 transition-colors">
-                      <td className="py-4 px-6 text-emerald-400 font-bold">{key.keyPrefix}</td>
-                      <td className="py-4 px-6 text-slate-300">
-                        {isRevealed ? displaySecret : `${key.keyPrefix}••••••••••••••••••••••••`}
-                      </td>
-                      <td className="py-4 px-6 font-sans">
-                        {key.revokedAt ? (
-                          <span className="text-[10px] text-rose-400 font-semibold bg-rose-500/10 border border-rose-500/20 px-2.5 py-0.5 rounded-full">REVOCATA</span>
-                        ) : (
-                          <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">ATTIVA</span>
-                        )}
-                      </td>
-                      <td className="py-4 px-6 text-slate-400 font-sans">
-                        {new Date(key.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="py-4 px-6 text-right font-sans space-x-2">
-                        <button
-                          onClick={() => toggleReveal(key.id)}
-                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
-                          title={isRevealed ? 'Nascondi' : 'Mostra'}
-                        >
-                          {isRevealed ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-
-                        <button
-                          onClick={() => handleCopy(key.id, displaySecret)}
-                          className="p-1.5 rounded-lg bg-indigo-900/40 hover:bg-indigo-900/60 text-indigo-300 border border-indigo-700/50 transition-colors"
-                          title="Copia negli appunti"
-                        >
-                          {isCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                        </button>
-
-                        {!key.revokedAt && (
-                          <button
-                            onClick={() => handleRevoke(key.id)}
-                            className="p-1.5 rounded-lg bg-rose-900/40 hover:bg-rose-900/60 text-rose-300 border border-rose-700/50 transition-colors"
-                            title="Revoca Chiave"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+              })
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

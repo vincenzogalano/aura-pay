@@ -7,10 +7,10 @@ import {
   Key, 
   FileText, 
   Webhook, 
-  Zap,
   PlayCircle,
   Terminal,
-  ExternalLink
+  ShieldCheck,
+  Radio
 } from 'lucide-react';
 import { useMerchant } from '../../context/MerchantContext';
 
@@ -20,35 +20,39 @@ export const Sidebar: React.FC = () => {
   const mainItems = [
     { label: 'Overview', path: '/dashboard', icon: LayoutDashboard },
     { label: 'Transazioni', path: '/transactions', icon: CreditCard },
-    { label: 'KYB & Profilo', path: '/onboarding', icon: UserCheck, badge: merchant.status === 'VERIFIED' ? 'LIVE OK' : 'PENDING' },
-    { label: 'API Keys', path: '/api-keys', icon: Key },
+    { label: 'Registrazione & KYB', path: '/onboarding', icon: UserCheck, badge: merchant.status === 'VERIFIED' ? 'LIVE OK' : 'PENDING' },
+    { label: 'Chiavi API', path: '/api-keys', icon: Key },
     { label: 'Fatture PDF', path: '/invoices', icon: FileText },
     { label: 'Webhooks', path: '/webhooks', icon: Webhook },
   ];
 
   const devToolsItems = [
-    { label: 'Checkout Demo', path: '/checkout-demo', icon: PlayCircle, highlight: true },
-    { label: 'Dev Console', path: '/developer', icon: Terminal },
+    { label: 'Checkout Demo', path: '/checkout-demo', icon: PlayCircle },
+    { label: 'Console Dev', path: '/developer', icon: Terminal },
+    { label: 'Event Stream Kafka', path: '/event-stream', icon: Radio },
   ];
 
   return (
-    <aside className="w-64 bg-slate-950 border-r border-slate-800/80 flex flex-col justify-between h-screen sticky top-0 z-40">
+    <aside className="w-64 bg-white border-r border-zinc-200 flex flex-col justify-between h-screen sticky top-0 z-40">
       <div>
-        {/* Brand Logo Header */}
-        <div className="p-6 flex items-center gap-3 border-b border-slate-800/60">
-          <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-glow-indigo">
-            <Zap className="w-6 h-6 fill-current text-white" />
+        {/* Brand Header */}
+        <div className="p-5 flex items-center justify-between border-b border-zinc-200">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-md bg-zinc-900 flex items-center justify-center text-white font-bold text-sm">
+              A
+            </div>
+            <div>
+              <h1 className="font-bold text-sm text-zinc-900 tracking-tight">AuraPay</h1>
+              <p className="text-[10px] text-zinc-500 font-medium">Merchant Console</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-extrabold text-lg text-white tracking-tight">AuraPay</h1>
-            <p className="text-[10px] font-medium text-indigo-400 uppercase tracking-wider">Merchant Portal</p>
-          </div>
+          <ShieldCheck className="w-4 h-4 text-zinc-400" />
         </div>
 
         {/* Navigation Menu */}
-        <nav className="px-3 py-4 space-y-6">
+        <nav className="px-3 py-4 space-y-6 text-xs">
           <div className="space-y-1">
-            <div className="px-3 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Gestione</div>
+            <div className="px-3 pb-1.5 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Gestione</div>
             {mainItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -56,22 +60,22 @@ export const Sidebar: React.FC = () => {
                   key={item.path}
                   to={item.path}
                   className={({ isActive }: { isActive: boolean }) =>
-                    `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 ${
+                    `flex items-center justify-between px-3 py-2 rounded-md font-medium transition-colors ${
                       isActive
-                        ? 'bg-indigo-600/15 text-indigo-400 border border-indigo-500/30 shadow-glow-indigo font-semibold'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+                        ? 'bg-zinc-100 text-zinc-900 font-semibold'
+                        : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
                     }`
                   }
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2.5">
                     <Icon className="w-4 h-4" />
                     <span>{item.label}</span>
                   </div>
                   {item.badge && (
-                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-semibold ${
                       item.badge === 'LIVE OK' 
-                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' 
-                        : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                        : 'bg-amber-50 text-amber-700 border border-amber-200'
                     }`}>
                       {item.badge}
                     </span>
@@ -81,8 +85,8 @@ export const Sidebar: React.FC = () => {
             })}
           </div>
 
-          <div className="space-y-1 pt-2 border-t border-slate-900">
-            <div className="px-3 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Developer Suite</div>
+          <div className="space-y-1 pt-3 border-t border-zinc-200">
+            <div className="px-3 pb-1.5 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Developer Suite</div>
             {devToolsItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -90,22 +94,17 @@ export const Sidebar: React.FC = () => {
                   key={item.path}
                   to={item.path}
                   className={({ isActive }: { isActive: boolean }) =>
-                    `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 ${
+                    `flex items-center justify-between px-3 py-2 rounded-md font-medium transition-colors ${
                       isActive
-                        ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 shadow-glow-indigo font-semibold'
-                        : item.highlight
-                        ? 'text-cyan-300 hover:text-white bg-cyan-950/20 border border-cyan-500/20 hover:bg-cyan-900/40'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+                        ? 'bg-zinc-100 text-zinc-900 font-semibold'
+                        : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
                     }`
                   }
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2.5">
                     <Icon className="w-4 h-4" />
                     <span>{item.label}</span>
                   </div>
-                  {item.highlight && (
-                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-                  )}
                 </NavLink>
               );
             })}
@@ -113,15 +112,12 @@ export const Sidebar: React.FC = () => {
         </nav>
       </div>
 
-      {/* Footer Info & Documentation */}
-      <div className="p-4 border-t border-slate-800/60">
-        <div className="glass-card p-3 text-xs space-y-1.5">
-          <div className="font-semibold text-slate-300 flex items-center justify-between text-xs">
-            <span>AuraPay Engine v1.0</span>
-            <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
-          </div>
-          <p className="text-slate-500 text-[11px] leading-tight">
-            Event-Driven Payment Gateway con Ledger a partita doppia.
+      {/* Footer Info */}
+      <div className="p-4 border-t border-zinc-200">
+        <div className="p-3 rounded-lg bg-zinc-50 border border-zinc-200 text-xs space-y-1">
+          <div className="font-semibold text-zinc-800">AuraPay Gateway v1.0</div>
+          <p className="text-zinc-500 text-[11px] leading-relaxed">
+            Infrastruttura ad eventi con Ledger in partita doppia.
           </p>
         </div>
       </div>

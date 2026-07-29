@@ -1,76 +1,55 @@
-import { apiClient, handleApiErrorWithFallback } from './client';
+import { apiClient } from './client';
 import type { Merchant, ApiKey } from '../types';
-import { mockMerchant, mockApiKeys } from './mockData';
 
 export const merchantApi = {
   // POST /v1/merchants/register
   registerMerchant: async (data: { businessName: string; vatNumber: string; email: string; country: string }): Promise<{ merchant: Merchant; apiKeys: ApiKey[] }> => {
-    try {
-      const response = await apiClient.post('/v1/merchants/register', data);
-      return response.data;
-    } catch (error) {
-      return handleApiErrorWithFallback(error, {
-        merchant: {
-          ...mockMerchant,
-          businessName: data.businessName,
-          vatNumber: data.vatNumber,
-          email: data.email,
-          country: data.country || 'IT',
-          status: 'PENDING_VERIFICATION',
-        },
-        apiKeys: mockApiKeys.filter(k => k.environment === 'TEST'),
-      });
-    }
+    const response = await apiClient.post('/v1/merchants/register', data);
+    return response.data;
   },
 
   // GET /v1/merchants/{id}
   getMerchantProfile: async (merchantId: string): Promise<Merchant> => {
-    try {
-      const response = await apiClient.get(`/v1/merchants/${merchantId}`);
-      return response.data;
-    } catch (error) {
-      return handleApiErrorWithFallback(error, mockMerchant);
-    }
+    const response = await apiClient.get(`/v1/merchants/${merchantId}`);
+    return response.data;
   },
 
   // POST /v1/merchants/{id}/verification-request
   requestKYBVerification: async (merchantId: string, payload: { taxId: string; address: string; legalRepresentative: string }): Promise<Merchant> => {
-    try {
-      const response = await apiClient.post(`/v1/merchants/${merchantId}/verification-request`, payload);
-      return response.data;
-    } catch (error) {
-      return handleApiErrorWithFallback(error, {
-        ...mockMerchant,
-        status: 'VERIFIED', // Simula approvazione KYB immediata nel mock
-      });
-    }
+    const response = await apiClient.post(`/v1/merchants/${merchantId}/verification-request`, payload);
+    return response.data;
   },
 
   // GET /v1/merchants/{id}/api-keys
   getApiKeys: async (merchantId: string): Promise<ApiKey[]> => {
-    try {
-      const response = await apiClient.get(`/v1/merchants/${merchantId}/api-keys`);
-      return response.data;
-    } catch (error) {
-      return handleApiErrorWithFallback(error, mockApiKeys);
-    }
+    const response = await apiClient.get(`/v1/merchants/${merchantId}/api-keys`);
+    const data = response.data;
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.content)) return data.content;
+    return [];
   },
 
   // POST /v1/merchants/{id}/api-keys/live
-  generateLiveKeys: async (merchantId: string): Promise<ApiKey> => {
-    try {
-      const response = await apiClient.post(`/v1/merchants/${merchantId}/api-keys/live`);
-      return response.data;
-    } catch (error) {
-      return handleApiErrorWithFallback(error, {
-        id: `key_live_${Date.now()}`,
-        merchantId,
-        keyPrefix: 'sk_live_new99',
-        environment: 'LIVE',
-        revokedAt: null,
-        createdAt: new Date().toISOString(),
-        keySecret: 'sk_live_demo_mock_key_aura_generated',
-      });
-    }
+  generateLiveKeys: async (merchantId: string): Promise<ApiKey[]> => {
+    const response = await apiClient.post(`/v1/merchants/${merchantId}/api-keys/live`);
+    const data = response.data;
+    if (Array.isArray(data)) return data;
+    if (data && typeof data === 'object') return [data];
+    return [];
+  },
+
+  // POST /v1/merchants/{id}/api-keys/test
+  generateTestKeys: async (merchantId: string): Promise<ApiKey[]> => {
+    const response = await apiClient.post(`/v1/merchants/${merchantId}/api-keys/test`);
+    const data = response.data;
+    if (Array.isArray(data)) return data;
+    if (data && typeof data === 'object') return [data];
+    return [];
+  },
+
+  // POST /v1/merchants/{id}/api-keys/{keyId}/revoke
+  revokeApiKey: async (merchantId: string, keyId: string): Promise<ApiKey> => {
+    const response = await apiClient.post(`/v1/merchants/${merchantId}/api-keys/${keyId}/revoke`);
+    return response.data;
   },
 };

@@ -9,7 +9,34 @@ import type {
   WebhookDelivery 
 } from '../types';
 
-export const mockMerchant: Merchant = {
+const STORAGE_KEYS = {
+  MERCHANT: 'aurapay_merchant',
+  PAYMENTS: 'aurapay_payments',
+  INVOICES: 'aurapay_invoices',
+  BALANCES: 'aurapay_balances',
+  WEBHOOK_SUBS: 'aurapay_webhook_subs',
+  WEBHOOK_DELIVERIES: 'aurapay_webhook_deliveries',
+  KAFKA_EVENTS: 'aurapay_kafka_events',
+};
+
+const loadFromStorage = <T>(key: string, fallback: T): T => {
+  try {
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : fallback;
+  } catch (e) {
+    return fallback;
+  }
+};
+
+const saveToStorage = <T>(key: string, data: T): void => {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (e) {
+    console.error('Errore salvataggio localStorage:', e);
+  }
+};
+
+export const mockMerchant: Merchant = loadFromStorage(STORAGE_KEYS.MERCHANT, {
   id: 'mch_acme_tech_2026',
   businessName: 'Acme Tech Solutions S.r.l.',
   vatNumber: 'IT12345678901',
@@ -17,7 +44,7 @@ export const mockMerchant: Merchant = {
   status: 'VERIFIED',
   country: 'Italia',
   createdAt: '2026-07-01T10:00:00Z',
-};
+});
 
 export const mockApiKeys: ApiKey[] = [
   {
@@ -30,15 +57,6 @@ export const mockApiKeys: ApiKey[] = [
     keySecret: 'sk_test_demo_key_aurapay_2026_sandbox',
   },
   {
-    id: 'key_test_pk',
-    merchantId: mockMerchant.id,
-    keyPrefix: 'pk_test_x9y8',
-    environment: 'TEST',
-    revokedAt: null,
-    createdAt: '2026-07-01T10:05:00Z',
-    keySecret: 'pk_test_demo_key_aurapay_2026_public',
-  },
-  {
     id: 'key_live_01',
     merchantId: mockMerchant.id,
     keyPrefix: 'sk_live_99zz',
@@ -49,11 +67,11 @@ export const mockApiKeys: ApiKey[] = [
   },
 ];
 
-export const mockPayments: PaymentIntent[] = [
+const initialPayments: PaymentIntent[] = [
   {
     id: 'pi_89123456',
     merchantId: mockMerchant.id,
-    amountCents: 12500, // 125.00 EUR
+    amountCents: 12500,
     currency: 'EUR',
     status: 'SUCCEEDED',
     isTest: true,
@@ -67,7 +85,7 @@ export const mockPayments: PaymentIntent[] = [
   {
     id: 'pi_77213499',
     merchantId: mockMerchant.id,
-    amountCents: 4999, // 49.99 EUR
+    amountCents: 4999,
     currency: 'EUR',
     status: 'PARTIALLY_REFUNDED',
     isTest: true,
@@ -75,68 +93,28 @@ export const mockPayments: PaymentIntent[] = [
     customerEmail: 'giulia.bianchi@studio.it',
     authorizationCode: 'AUTH_772134',
     bankTransactionId: 'tx_bank_441299',
-    refundedAmountCents: 1000, // 10.00 EUR rimborsati
+    refundedAmountCents: 1000,
     createdAt: '2026-07-24T16:45:00Z',
     updatedAt: '2026-07-25T09:12:00Z',
   },
-  {
-    id: 'pi_99410211',
-    merchantId: mockMerchant.id,
-    amountCents: 8900, // 89.00 EUR
-    currency: 'EUR',
-    status: 'FAILED',
-    isTest: true,
-    description: 'Rinnovo Servizi Server Cloud',
-    customerEmail: 'supporto@devstudio.io',
-    failureReason: 'Fondi insufficienti sulla carta (Codice errore: 51)',
-    createdAt: '2026-07-24T14:10:00Z',
-    updatedAt: '2026-07-24T14:10:02Z',
-  },
-  {
-    id: 'pi_00129944',
-    merchantId: mockMerchant.id,
-    amountCents: 35000, // 350.00 EUR
-    currency: 'EUR',
-    status: 'SUCCEEDED',
-    isTest: false, // LIVE
-    description: 'Consulenza Architetturale Microservizi',
-    customerEmail: 'direzione@enterprisecorp.de',
-    authorizationCode: 'AUTH_001299',
-    bankTransactionId: 'tx_bank_776102',
-    createdAt: '2026-07-23T18:30:00Z',
-    updatedAt: '2026-07-23T18:30:04Z',
-  },
-  {
-    id: 'pi_33219088',
-    merchantId: mockMerchant.id,
-    amountCents: 1999, // 19.99 EUR
-    currency: 'EUR',
-    status: 'REFUNDED',
-    isTest: true,
-    description: 'Estensione Spazio Storage 100GB',
-    customerEmail: 'admin@startup.fr',
-    authorizationCode: 'AUTH_445100',
-    bankTransactionId: 'tx_bank_332190',
-    refundedAmountCents: 1999,
-    createdAt: '2026-07-22T10:15:00Z',
-    updatedAt: '2026-07-22T11:00:00Z',
-  },
 ];
 
-export const mockLedgerBalances: Record<'TEST' | 'LIVE', LedgerBalance> = {
+export const mockPayments: PaymentIntent[] = loadFromStorage(STORAGE_KEYS.PAYMENTS, initialPayments);
+
+export const mockLedgerBalances: Record<'TEST' | 'LIVE', LedgerBalance> = loadFromStorage(STORAGE_KEYS.BALANCES, {
   TEST: {
     merchantId: mockMerchant.id,
-    availableBalanceCents: 16499, // 164.99 EUR
+    availableBalanceCents: 16499,
     currency: 'EUR',
     isTest: true,
   },
   LIVE: {
     merchantId: mockMerchant.id,
-    availableBalanceCents: 35000, // 350.00 EUR
+    availableBalanceCents: 35000,
     currency: 'EUR',
     isTest: false,
   },
-};
+});
 
 export const mockLedgerEntries: LedgerEntry[] = [
   {
@@ -149,39 +127,9 @@ export const mockLedgerEntries: LedgerEntry[] = [
     isTest: true,
     createdAt: '2026-07-25T11:20:05Z',
   },
-  {
-    id: 'led_02',
-    merchantId: mockMerchant.id,
-    paymentIntentId: 'pi_89123456',
-    accountType: 'SYSTEM_REVENUE',
-    entryType: 'CREDIT',
-    amountCents: 375,
-    isTest: true,
-    createdAt: '2026-07-25T11:20:05Z',
-  },
-  {
-    id: 'led_03',
-    merchantId: mockMerchant.id,
-    paymentIntentId: 'pi_89123456',
-    accountType: 'SETTLEMENT_HOLDING',
-    entryType: 'DEBIT',
-    amountCents: 12500,
-    isTest: true,
-    createdAt: '2026-07-25T11:20:05Z',
-  },
-  {
-    id: 'led_04',
-    merchantId: mockMerchant.id,
-    paymentIntentId: 'pi_00129944',
-    accountType: 'MERCHANT_AVAILABLE',
-    entryType: 'CREDIT',
-    amountCents: 33950,
-    isTest: false,
-    createdAt: '2026-07-23T18:30:04Z',
-  },
 ];
 
-export const mockInvoices: Invoice[] = [
+const initialInvoices: Invoice[] = [
   {
     id: 'inv_2026_00101',
     invoiceNumber: 'INV-2026-000101',
@@ -195,36 +143,11 @@ export const mockInvoices: Invoice[] = [
     pdfObjectKey: 'invoices/2026/mch_acme_tech/INV-2026-000101.pdf',
     createdAt: '2026-07-25T11:20:06Z',
   },
-  {
-    id: 'inv_2026_00045',
-    invoiceNumber: 'INV-2026-000045',
-    merchantId: mockMerchant.id,
-    paymentIntentId: 'pi_00129944',
-    amountCents: 35000,
-    currency: 'EUR',
-    invoiceType: 'INVOICE',
-    status: 'GENERATED',
-    isTest: false,
-    pdfObjectKey: 'invoices/2026/mch_acme_tech/INV-2026-000045.pdf',
-    createdAt: '2026-07-23T18:30:05Z',
-  },
-  {
-    id: 'cn_2026_00005',
-    invoiceNumber: 'CN-2026-000005',
-    merchantId: mockMerchant.id,
-    paymentIntentId: 'pi_33219088',
-    refundId: 're_11223344',
-    amountCents: 1999,
-    currency: 'EUR',
-    invoiceType: 'CREDIT_NOTE',
-    status: 'GENERATED',
-    isTest: true,
-    pdfObjectKey: 'invoices/2026/mch_acme_tech/CN-2026-000005.pdf',
-    createdAt: '2026-07-22T11:00:02Z',
-  },
 ];
 
-export const mockWebhookSubscriptions: WebhookSubscription[] = [
+export const mockInvoices: Invoice[] = loadFromStorage(STORAGE_KEYS.INVOICES, initialInvoices);
+
+const initialSubscriptions: WebhookSubscription[] = [
   {
     id: 'sub_01',
     merchantId: mockMerchant.id,
@@ -236,7 +159,9 @@ export const mockWebhookSubscriptions: WebhookSubscription[] = [
   },
 ];
 
-export const mockWebhookDeliveries: WebhookDelivery[] = [
+export const mockWebhookSubscriptions: WebhookSubscription[] = loadFromStorage(STORAGE_KEYS.WEBHOOK_SUBS, initialSubscriptions);
+
+const initialDeliveries: WebhookDelivery[] = [
   {
     id: 'del_01',
     subscriptionId: 'sub_01',
@@ -250,17 +175,109 @@ export const mockWebhookDeliveries: WebhookDelivery[] = [
     isTest: true,
     createdAt: '2026-07-25T11:20:06Z',
   },
+];
+
+export const mockWebhookDeliveries: WebhookDelivery[] = loadFromStorage(STORAGE_KEYS.WEBHOOK_DELIVERIES, initialDeliveries);
+
+export interface KafkaEventRecord {
+  id: string;
+  topic: string;
+  partition: number;
+  offset: number;
+  timestamp: string;
+  producerService: string;
+  payload: Record<string, any>;
+}
+
+const initialKafkaEvents: KafkaEventRecord[] = [
   {
-    id: 'del_02',
-    subscriptionId: 'sub_01',
-    eventId: 'evt_99f012aa',
-    eventType: 'refund.succeeded',
-    httpStatus: 500,
-    attemptCount: 5,
-    status: 'DEAD_LETTER',
-    lastError: 'HTTP 500 Internal Server Error (Endpoint del merchant temporaneamente non raggiungibile)',
-    nextAttemptAt: null,
-    isTest: true,
-    createdAt: '2026-07-24T16:46:00Z',
+    id: 'evt_9901a',
+    topic: 'aura.payment.succeeded.v1',
+    partition: 0,
+    offset: 1042,
+    timestamp: new Date().toISOString(),
+    producerService: 'aura-payment-orchestrator',
+    payload: {
+      eventId: 'evt_9901a',
+      eventType: 'aura.payment.succeeded.v1',
+      paymentIntentId: 'pi_89123456',
+      merchantId: 'mch_acme_tech_2026',
+      amountCents: 12500,
+      currency: 'EUR',
+      authorizationCode: 'AUTH_891234',
+      bankTransactionId: 'tx_bank_998123',
+      isTest: true,
+    },
   },
 ];
+
+export const mockKafkaEvents: KafkaEventRecord[] = loadFromStorage(STORAGE_KEYS.KAFKA_EVENTS, initialKafkaEvents);
+
+/**
+ * Persiste ogni operazione in localStorage per resistere al ricaricamento (F5)
+ */
+export const syncStorage = () => {
+  saveToStorage(STORAGE_KEYS.PAYMENTS, mockPayments);
+  saveToStorage(STORAGE_KEYS.INVOICES, mockInvoices);
+  saveToStorage(STORAGE_KEYS.BALANCES, mockLedgerBalances);
+  saveToStorage(STORAGE_KEYS.WEBHOOK_SUBS, mockWebhookSubscriptions);
+  saveToStorage(STORAGE_KEYS.WEBHOOK_DELIVERIES, mockWebhookDeliveries);
+  saveToStorage(STORAGE_KEYS.KAFKA_EVENTS, mockKafkaEvents);
+};
+
+export const registerMockCompletedPayment = (payment: PaymentIntent) => {
+  const existingIdx = mockPayments.findIndex((p) => p.id === payment.id);
+  if (existingIdx >= 0) {
+    mockPayments[existingIdx] = payment;
+  } else {
+    mockPayments.unshift(payment);
+  }
+
+  if (payment.status === 'SUCCEEDED') {
+    const envKey = payment.isTest ? 'TEST' : 'LIVE';
+    mockLedgerBalances[envKey].availableBalanceCents += payment.amountCents;
+
+    const invNum = `INV-2026-${Math.floor(100000 + Math.random() * 900000)}`;
+    const newInvoice: Invoice = {
+      id: `inv_${payment.id}`,
+      invoiceNumber: invNum,
+      merchantId: payment.merchantId,
+      paymentIntentId: payment.id,
+      amountCents: payment.amountCents,
+      currency: payment.currency,
+      invoiceType: 'INVOICE',
+      status: 'GENERATED',
+      isTest: payment.isTest,
+      pdfObjectKey: `invoices/2026/${payment.merchantId}/${invNum}.pdf`,
+      createdAt: new Date().toISOString(),
+    };
+    mockInvoices.unshift(newInvoice);
+
+    mockKafkaEvents.unshift({
+      id: `evt_${payment.id}`,
+      topic: 'aura.payment.succeeded.v1',
+      partition: 0,
+      offset: Math.floor(2000 + Math.random() * 5000),
+      timestamp: new Date().toISOString(),
+      producerService: 'aura-payment-orchestrator',
+      payload: {
+        eventId: `evt_${payment.id}`,
+        eventType: 'aura.payment.succeeded.v1',
+        paymentIntentId: payment.id,
+        merchantId: payment.merchantId,
+        amountCents: payment.amountCents,
+        currency: payment.currency,
+        authorizationCode: payment.authorizationCode || 'AUTH_DEMO',
+        bankTransactionId: payment.bankTransactionId || 'tx_bank_demo',
+        isTest: payment.isTest,
+      },
+    });
+  }
+
+  syncStorage();
+};
+
+export const registerMockWebhookSubscription = (sub: WebhookSubscription) => {
+  mockWebhookSubscriptions.unshift(sub);
+  syncStorage();
+};

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useMerchant } from '../../context/MerchantContext';
 import { EnvironmentBadge } from '../common/EnvironmentBadge';
-import { Activity, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const Header: React.FC = () => {
@@ -18,58 +18,51 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-slate-900/80 backdrop-blur-xl border-b border-slate-800/80 px-6 py-4 flex items-center justify-between transition-all">
-      {/* Left side: Breadcrumb / Active Environment */}
+    <header className="sticky top-0 z-30 bg-white border-b border-zinc-200 px-6 py-3.5 flex items-center justify-between">
+      {/* Left side: Environment Badge & Merchant Name */}
       <div className="flex items-center gap-4">
         <EnvironmentBadge isTest={isTest} />
         
-        <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400">
-          <span>AuraPay Engine</span>
-          <ChevronRight className="w-3 h-3 text-slate-600" />
-          <span className="text-slate-200 font-medium">{merchant.businessName}</span>
+        <div className="hidden sm:flex items-center gap-2 text-xs text-zinc-500">
+          <span>AuraPay Console</span>
+          <ChevronRight className="w-3.5 h-3.5 text-zinc-400" />
+          <span className="text-zinc-900 font-medium">{merchant.businessName}</span>
         </div>
       </div>
 
-      {/* Right side: Environment Switcher, Platform Status, Merchant Profile */}
-      <div className="flex items-center gap-5">
+      {/* Right side: Environment Switcher & Merchant Profile */}
+      <div className="flex items-center gap-4">
         {/* Toggle Switch */}
-        <div className="flex items-center gap-2 bg-slate-950/70 border border-slate-800 p-1.5 rounded-xl">
+        <div className="flex items-center gap-1 bg-zinc-100 border border-zinc-200 p-1 rounded-md">
           <button
             onClick={handleToggle}
-            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all ${
+            className={`text-xs font-medium px-3 py-1 rounded transition-colors ${
               isTest 
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 shadow-sm' 
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-amber-100 text-amber-900 border border-amber-300 font-semibold' 
+                : 'text-zinc-500 hover:text-zinc-900'
             }`}
           >
             Sandbox
           </button>
           <button
             onClick={handleToggle}
-            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all ${
+            className={`text-xs font-medium px-3 py-1 rounded transition-colors ${
               !isTest 
-                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shadow-sm' 
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-semibold' 
+                : 'text-zinc-500 hover:text-zinc-900'
             }`}
           >
             Live
           </button>
         </div>
 
-        {/* Platform Status Indicator */}
-        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-950/50 border border-slate-800/60 text-xs text-slate-300">
-          <Activity className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-          <span>System Operational</span>
-        </div>
-
         {/* Merchant Avatar */}
-        <div className="flex items-center gap-3 pl-3 border-l border-slate-800">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-600 to-indigo-400 flex items-center justify-center text-white font-bold text-sm shadow-glow-indigo">
+        <div className="flex items-center gap-2.5 pl-3 border-l border-zinc-200">
+          <div className="w-7 h-7 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-xs">
             {merchant.businessName.substring(0, 2).toUpperCase()}
           </div>
-          <div className="hidden lg:block text-left">
-            <div className="text-xs font-semibold text-slate-200">{merchant.businessName}</div>
-            <div className="text-[10px] text-slate-400">{merchant.email}</div>
+          <div className="hidden lg:block text-left text-xs">
+            <div className="font-semibold text-zinc-900">{merchant.businessName}</div>
           </div>
         </div>
       </div>
