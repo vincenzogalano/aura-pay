@@ -5,7 +5,7 @@ import com.aurapay.vault.dto.request.RetrieveRequest;
 import com.aurapay.vault.dto.request.TokenizeRequest;
 import com.aurapay.vault.dto.response.CardDetailsResponse;
 import com.aurapay.vault.dto.response.TokenResponse;
-import com.aurapay.vault.exception.GlobalExceptionHandler;
+import com.aurapay.core.config.AuraGlobalExceptionHandler;
 import com.aurapay.vault.service.VaultService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(VaultController.class)
-@Import(GlobalExceptionHandler.class)
+@Import(AuraGlobalExceptionHandler.class)
 @DisplayName("Vault Controller Endpoints Integration Tests")
 class VaultControllerTest {
 

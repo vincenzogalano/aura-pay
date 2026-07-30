@@ -4,7 +4,7 @@ import com.aurapay.banksimulator.dto.request.BankAuthorizationRequest;
 import com.aurapay.banksimulator.dto.response.BankAuthorizationResponse;
 import com.aurapay.banksimulator.dto.request.BankRefundRequest;
 import com.aurapay.banksimulator.dto.response.BankRefundResponse;
-import com.aurapay.banksimulator.exception.GlobalExceptionHandler;
+import com.aurapay.core.config.AuraGlobalExceptionHandler;
 import com.aurapay.banksimulator.service.BankSimulatorService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(BankSimulatorController.class)
-@Import(GlobalExceptionHandler.class)
+@Import(AuraGlobalExceptionHandler.class)
 class BankSimulatorControllerTest {
 
     @Autowired

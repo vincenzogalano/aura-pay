@@ -7,7 +7,7 @@ import com.aurapay.orchestrator.dto.request.ConfirmPaymentIntentRequest;
 import com.aurapay.orchestrator.dto.request.CreatePaymentIntentRequest;
 import com.aurapay.orchestrator.dto.request.RefundPaymentRequest;
 import com.aurapay.orchestrator.dto.response.PaymentIntentResponse;
-import com.aurapay.orchestrator.exception.GlobalExceptionHandler;
+import com.aurapay.core.config.AuraGlobalExceptionHandler;
 import com.aurapay.orchestrator.service.PaymentOrchestrationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -30,7 +30,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(PaymentController.class)
-@Import(GlobalExceptionHandler.class)
+@Import(AuraGlobalExceptionHandler.class)
 class PaymentControllerTest {
 
     @Autowired

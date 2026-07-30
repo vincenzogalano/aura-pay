@@ -31,7 +31,9 @@ import static org.mockito.Mockito.verify;
 @TestPropertySource(properties = {
         "spring.datasource.url=jdbc:h2:mem:invoice_e2edb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL",
         "spring.datasource.driver-class-name=org.h2.Driver",
-        "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect"
+        "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
+        "spring.kafka.bootstrap-servers=localhost:9092",
+        "spring.kafka.listener.auto-startup=false"
 })
 @Transactional
 class InvoiceGenerationAndMinIOE2ETest {

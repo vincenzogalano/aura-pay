@@ -17,6 +17,10 @@ spring:
   sql:
     init:
       mode: never
+  kafka:
+    bootstrap-servers: localhost:9092
+    listener:
+      auto-startup: false
 
 aurapay:
   services:
