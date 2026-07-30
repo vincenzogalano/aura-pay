@@ -11,6 +11,7 @@ import {
   Key,
   Trash2
 } from 'lucide-react';
+import { getDeliveryStatusInfo } from '../utils/statusUtils';
 import { toast } from 'sonner';
 
 export const WebhooksPage: React.FC = () => {
@@ -91,6 +92,17 @@ export const WebhooksPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fadeIn">
+      {/* Architectural Pattern Banner */}
+      <div className="p-4 rounded-lg bg-indigo-50 border border-indigo-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-indigo-900">
+        <div className="flex items-center gap-2.5 font-bold">
+          <Webhook className="w-4 h-4 text-indigo-600 shrink-0" />
+          <span>Garanzia di Sicurezza &amp; Consegna Notifiche Webhook</span>
+        </div>
+        <div className="text-[11px] text-indigo-800 leading-relaxed">
+          Ogni notifica viene firmata crittograficamente con la chiave segreta dell'esercente (<code className="font-mono bg-indigo-100 px-1 rounded">X-Aura-Signature</code>) con algoritmi HMAC SHA-256. I tentativi errati vengono ritentati automaticamente.
+        </div>
+      </div>
+
       {/* Title */}
       <div className="border-b border-zinc-200 pb-5">
         <h1 className="text-xl font-bold text-zinc-900 tracking-tight">
@@ -141,13 +153,40 @@ export const WebhooksPage: React.FC = () => {
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="btn-shadcn-primary w-full text-xs py-2 mt-2"
-            >
-              {submitting ? 'Salvataggio...' : 'Salva URL Notifica Webhook'}
-            </button>
+            <div className="space-y-2 pt-2">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="btn-shadcn-primary w-full text-xs py-2"
+              >
+                {submitting ? 'Salvataggio...' : 'Salva URL Notifica Webhook'}
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  setSubmitting(true);
+                  try {
+                    const failSub = await webhookApi.createSubscription({
+                      merchantId: merchant.id,
+                      targetUrl: 'http://invalid-dead-letter-dlq.local/fail',
+                      events: ['payment.failed'],
+                      isTest,
+                    });
+                    setSubscriptions(prev => [failSub, ...prev]);
+                    toast.warning('Endpoint errato aggiunto per simulazione DLQ! Evento aura.webhook.delivery_dead_lettered.v1 pronto.');
+                  } catch (e) {
+                    toast.error('Errore nella creazione simulazione DLQ');
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }}
+                disabled={submitting}
+                className="btn-shadcn-secondary w-full text-xs py-1.5 text-rose-600 border-rose-200 bg-rose-50 hover:bg-rose-100 transition-colors"
+              >
+                🔴 Simula Webhook Errato &rarr; Dead Letter Queue (DLQ)
+              </button>
+            </div>
           </form>
         </div>
 
@@ -161,10 +200,11 @@ export const WebhooksPage: React.FC = () => {
             {(Array.isArray(subscriptions) ? subscriptions : []).length === 0 ? (
               <div className="text-xs text-zinc-400 py-6 text-center">Nessun webhook configurato</div>
             ) : (
-              (Array.isArray(subscriptions) ? subscriptions : []).map((sub) => {
+              (Array.isArray(subscriptions) ? subscriptions : []).map((sub, idx) => {
                 const isRevealed = revealedSecrets[sub.id];
+                const cardKey = sub.id ? `sub-${sub.id}` : `sub-idx-${idx}`;
                 return (
-                  <div key={sub.id} className="p-3.5 rounded bg-zinc-50 border border-zinc-200 space-y-2.5 text-xs">
+                  <div key={cardKey} className="p-3.5 rounded bg-zinc-50 border border-zinc-200 space-y-2.5 text-xs">
                     <div className="flex items-center justify-between">
                       <div className="font-mono font-medium text-zinc-900 break-all pr-2">{sub.targetUrl}</div>
                       <div className="flex items-center gap-2 shrink-0">
@@ -230,18 +270,23 @@ export const WebhooksPage: React.FC = () => {
                     </td>
                   </tr>
                 ) : (
-                  (Array.isArray(deliveries) ? deliveries : []).map((del) => (
-                    <tr key={del.id} className="hover:bg-zinc-50 transition-colors">
+                  (Array.isArray(deliveries) ? deliveries : []).map((del, idx) => (
+                    <tr key={del.id ? `del-${del.id}` : `del-idx-${idx}`} className="hover:bg-zinc-50 transition-colors">
                       <td className="py-3 px-4 font-semibold text-zinc-900">{del.eventId}</td>
                       <td className="py-3 px-4 text-zinc-700 font-sans">{del.eventType}</td>
-                      <td className="py-3 px-4 font-semibold">
-                        {del.httpStatus === 200 ? (
-                          <span className="text-emerald-600">200 OK</span>
-                        ) : del.httpStatus ? (
-                          <span className="text-rose-600">{del.httpStatus} Err</span>
-                        ) : (
-                          <span className="text-zinc-400">-</span>
-                        )}
+                      <td className="py-3 px-4">
+                        {(() => {
+                          const delInfo = getDeliveryStatusInfo(del.status);
+                          return (
+                            <span 
+                              title={delInfo.description}
+                              className={`text-[10px] font-sans font-semibold px-2 py-0.5 rounded border inline-flex items-center gap-1.5 ${delInfo.bgClass} ${delInfo.textClass} ${delInfo.borderClass}`}
+                            >
+                              <span>{delInfo.icon}</span>
+                              <span>{delInfo.label}</span>
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="py-3 px-4 text-zinc-500">{del.attemptCount} / 5</td>
                       <td className="py-3 px-4 font-sans">

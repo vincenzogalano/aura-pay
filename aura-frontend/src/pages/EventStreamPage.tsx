@@ -122,78 +122,77 @@ export const EventStreamPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Title */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-200 pb-5">
         <div>
-          <h1 className="text-xl font-bold text-zinc-100 tracking-tight flex items-center gap-2">
-            <Radio className="w-5 h-5 text-emerald-400" />
-            <span>Stream Eventi Apache Kafka & Outbox</span>
+          <h1 className="text-xl font-bold text-zinc-900 tracking-tight flex items-center gap-2">
+            <Radio className="w-5 h-5 text-indigo-600" />
+            <span>Flusso Eventi Kafka in Tempo Reale</span>
           </h1>
-          <p className="text-zinc-400 text-xs mt-0.5">
-            Monitoraggio degli eventi pubblicati dal Transactional Outbox Pattern ({ALL_TOPICS.length} topic registrati).
+          <p className="text-zinc-500 text-xs mt-0.5">
+            Monitora l'emissione dei messaggi in streaming sui topic del cluster Apache Kafka.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setAutoRefresh(v => !v)}
-            className={`flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded border transition-colors ${
+            onClick={() => setAutoRefresh(prev => !prev)}
+            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded border transition-colors ${
               autoRefresh
-                ? 'bg-emerald-950 text-emerald-400 border-emerald-800'
-                : 'bg-zinc-900 text-zinc-400 border-zinc-700 hover:border-zinc-600'
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                : 'bg-zinc-100 text-zinc-700 border-zinc-200 hover:bg-zinc-200'
             }`}
           >
-            <span className={`w-1.5 h-1.5 rounded-full ${autoRefresh ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-600'}`} />
-            {autoRefresh ? 'Live (5s)' : 'Paused'}
+            <span className={`w-2 h-2 rounded-full ${autoRefresh ? 'bg-emerald-600 animate-pulse' : 'bg-zinc-400'}`} />
+            {autoRefresh ? 'Streaming Attivo (5s)' : 'Pausa Streaming'}
           </button>
           <button
             onClick={handleManualRefresh}
             disabled={refreshing}
-            className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded border bg-zinc-900 border-zinc-700 hover:border-zinc-600 text-zinc-400 hover:text-zinc-100 transition-colors disabled:opacity-50"
+            className="bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-50 text-xs px-3 py-1.5 flex items-center gap-1.5 font-semibold rounded disabled:opacity-50"
           >
-            <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
-            Aggiorna
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            <span>Aggiorna Ora</span>
           </button>
         </div>
       </div>
 
-      {/* Stats row */}
+      {/* Stats row (Light Theme High Contrast) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
         {[
-          { label: 'Totale eventi', value: events.length, color: 'text-zinc-100' },
-          { label: 'Topic attivi', value: [...new Set(events.map(e => e.topic))].length, color: 'text-indigo-400' },
-          { label: 'Filtrati', value: filteredEvents.length, color: 'text-emerald-400' },
-          { label: 'Ultimo aggiornamento', value: lastRefreshed.toLocaleTimeString(), color: 'text-zinc-400' },
+          { label: 'Totale eventi registrati', value: events.length, color: 'text-zinc-900' },
+          { label: 'Topic attivi', value: [...new Set(events.map(e => e.topic))].length, color: 'text-indigo-600' },
+          { label: 'Eventi filtrati', value: filteredEvents.length, color: 'text-emerald-700' },
+          { label: 'Ultimo controllo', value: lastRefreshed.toLocaleTimeString('it-IT'), color: 'text-zinc-600' },
         ].map((stat) => (
-          <div key={stat.label} className="p-3 rounded-lg bg-zinc-900/60 border border-zinc-800">
-            <div className={`font-mono font-bold text-base ${stat.color}`}>{stat.value}</div>
-            <div className="text-zinc-500 mt-0.5">{stat.label}</div>
+          <div key={stat.label} className="p-3.5 rounded-lg bg-white border border-zinc-200 shadow-sm">
+            <div className={`font-mono font-bold text-lg ${stat.color}`}>{stat.value}</div>
+            <div className="text-zinc-500 text-[11px] mt-0.5">{stat.label}</div>
           </div>
         ))}
       </div>
 
       {/* Filter Bar */}
-      <div className="p-4 rounded-lg bg-zinc-900/60 border border-zinc-800 flex flex-col md:flex-row gap-4 justify-between items-center text-xs">
-        <div className="relative w-full md:w-80">
-          <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-2.5" />
+      <div className="p-4 rounded-lg bg-white border border-zinc-200 shadow-xs flex flex-col md:flex-row gap-4 justify-between items-center text-xs">
+        <div className="input-with-icon-wrapper w-full md:w-80">
+          <Search className="w-4 h-4 input-icon" />
           <input
             type="text"
-            placeholder="Cerca per topic, payload o servizio..."
+            placeholder="Cerca per payload o ID evento..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="shadcn-input pl-9 w-full text-xs"
+            className="shadcn-input w-full text-xs"
           />
         </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-          <div className="flex items-center gap-1.5 text-zinc-500">
-            <Filter className="w-3.5 h-3.5" />
-            <span>Topic:</span>
-          </div>
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <Filter className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+          <span className="text-zinc-500 font-medium">Topic Kafka:</span>
           <select
             value={topicFilter}
             onChange={(e) => setTopicFilter(e.target.value)}
             className="shadcn-input text-xs cursor-pointer"
           >
-            <option value="ALL">Tutti i Topic ({ALL_TOPICS.length})</option>
+            <option value="ALL">Tutti i Topic Kafka ({ALL_TOPICS.length})</option>
             {ALL_TOPICS.map((t) => (
               <option key={t} value={t}>{t}</option>
             ))}
@@ -201,49 +200,50 @@ export const EventStreamPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Events List */}
+      {/* Events List (Light Theme) */}
       <div className="space-y-3">
         {loading ? (
-          <div className="p-12 text-center text-zinc-400 text-xs bg-zinc-900/40 rounded-lg border border-zinc-800">
-            <Radio className="w-6 h-6 mx-auto mb-3 animate-pulse text-zinc-600" />
-            Caricamento eventi dal cluster Kafka...
+          <div className="p-12 text-center text-zinc-400 text-xs bg-white rounded-lg border border-zinc-200">
+            <Radio className="w-6 h-6 mx-auto mb-3 animate-pulse text-indigo-600" />
+            Caricamento eventi dal cluster Kafka in corso...
           </div>
         ) : filteredEvents.length === 0 ? (
-          <div className="p-12 text-center text-zinc-500 text-xs bg-zinc-900/40 rounded-lg border border-zinc-800">
-            <Layers className="w-6 h-6 mx-auto mb-3 text-zinc-700" />
-            <p className="font-medium text-zinc-400">Nessun evento nel log</p>
-            <p className="mt-1">Esegui un pagamento dal Checkout Demo per vedere gli eventi in tempo reale.</p>
+          <div className="p-12 text-center text-zinc-400 text-xs bg-white rounded-lg border border-zinc-200">
+            <Layers className="w-6 h-6 mx-auto mb-3 text-zinc-400" />
+            <p className="font-bold text-zinc-800 text-sm">Nessun evento registrato nel log</p>
+            <p className="mt-1 text-zinc-500">Esegui un pagamento dal Simulatore di Checkout per osservare la cascata di eventi in tempo reale.</p>
           </div>
         ) : (
-          filteredEvents.map((evt) => (
-            <div key={evt.id} className="p-4 rounded-lg bg-zinc-900/60 border border-zinc-800 hover:border-zinc-700 transition-colors space-y-3">
+          filteredEvents.map((evt, idx) => (
+            <div key={evt.id ? `stream-${evt.id}` : `stream-idx-${idx}`} className="p-4 rounded-lg bg-white border border-zinc-200 hover:border-zinc-300 shadow-xs transition-colors space-y-3 text-xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Layers className="w-4 h-4 text-zinc-500 flex-shrink-0" />
-                  <span className={`font-mono text-[11px] font-semibold px-2 py-0.5 rounded border ${topicColor(evt.topic)}`}>
+                  <Layers className="w-4 h-4 text-indigo-600 shrink-0" />
+                  <span className={`font-mono text-[11px] font-bold px-2 py-0.5 rounded border ${topicColor(evt.topic)}`}>
                     {evt.topic}
                   </span>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-400">
-                    P:{evt.partition} O:{evt.offset}
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-zinc-600 font-semibold">
+                    Partizione:{evt.partition} Offset:{evt.offset}
                   </span>
                 </div>
-                <div className="text-[11px] font-mono text-zinc-500 flex-shrink-0">
-                  <span className="text-zinc-600">by</span>{' '}
-                  <span className="text-zinc-400">{evt.producerService}</span>{' '}
-                  <span className="text-zinc-600">•</span>{' '}
-                  {new Date(evt.timestamp).toLocaleTimeString()}
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-zinc-500 font-sans">
+                    {new Date(evt.timestamp).toLocaleTimeString('it-IT')}
+                  </span>
+                  <button
+                    onClick={() => copyPayload(evt.payload, evt.id)}
+                    className="p-1.5 rounded bg-zinc-100 hover:bg-zinc-200 text-zinc-700 transition-colors flex items-center gap-1 text-[11px]"
+                    title="Copia Payload JSON"
+                  >
+                    {copiedId === evt.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedId === evt.id ? 'Copiato!' : 'Copia'}</span>
+                  </button>
                 </div>
               </div>
 
-              <div className="relative">
-                <button
-                  onClick={() => copyPayload(evt.payload, evt.id)}
-                  className="absolute right-3 top-3 text-zinc-500 hover:text-zinc-200 p-1 flex items-center gap-1 text-[10px] z-10 transition-colors"
-                >
-                  {copiedId === evt.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                  <span>{copiedId === evt.id ? 'Copiato!' : 'Copia'}</span>
-                </button>
-                <pre className="p-4 rounded-md bg-zinc-950 text-zinc-300 font-mono text-[11px] overflow-x-auto max-h-64 border border-zinc-800">
+              <div className="pt-2 border-t border-zinc-100">
+                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">Payload JSON Evento Kafka:</span>
+                <pre className="p-3 rounded bg-zinc-900 text-amber-300 font-mono text-[11px] overflow-x-auto">
                   {JSON.stringify(evt.payload, null, 2)}
                 </pre>
               </div>

@@ -31,8 +31,8 @@ public class InvoiceController {
     public ResponseEntity<List<InvoiceResponse>> getInvoices(
             @RequestParam(value = "merchantId", required = false) String merchantId,
             @RequestParam(value = "isTest", required = false) Boolean isTest) {
-        log.info("REST request to list invoices with isTest={}", isTest);
-        List<InvoiceResponse> response = invoiceService.getAllInvoices(isTest);
+        log.info("REST request to list invoices with merchantId={}, isTest={}", merchantId, isTest);
+        List<InvoiceResponse> response = invoiceService.getAllInvoices(merchantId, isTest);
         return ResponseEntity.ok(response);
     }
 

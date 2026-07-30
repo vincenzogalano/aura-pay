@@ -10,6 +10,8 @@ import com.aurapay.core.events.PaymentFailedEvent;
 import com.aurapay.core.events.PaymentIntentCreatedEvent;
 import com.aurapay.core.events.PaymentProcessingEvent;
 import com.aurapay.core.events.PaymentSucceededEvent;
+import com.aurapay.core.events.RefundFailedEvent;
+import com.aurapay.core.events.RefundRequestedEvent;
 import com.aurapay.core.events.RefundSucceededEvent;
 import com.aurapay.core.exception.AuraException;
 import com.aurapay.orchestrator.domain.OutboxEvent;
@@ -98,6 +100,22 @@ public class PaymentEventFactory {
         return createOutboxEvent(intent.getId().toString(), event.getEventType(), event);
     }
 
+    public OutboxEvent buildRefundRequestedOutboxEvent(PaymentIntent intent, String refundId, long refundAmountCents, String reason) {
+        String eventId = UUID.randomUUID().toString();
+        RefundRequestedEvent event = new RefundRequestedEvent(
+                eventId,
+                EventType.REFUND_REQUESTED.getTopicName(),
+                Instant.now(),
+                refundId,
+                intent.getId().toString(),
+                intent.getMerchantId().toString(),
+                refundAmountCents,
+                reason != null ? reason : "Merchant requested refund",
+                intent.isTest()
+        );
+        return createOutboxEvent(intent.getId().toString(), event.getEventType(), event);
+    }
+
     public OutboxEvent buildRefundSucceededOutboxEvent(PaymentIntent intent, String refundId, long refundAmountCents, String reason) {
         String eventId = UUID.randomUUID().toString();
         RefundSucceededEvent event = new RefundSucceededEvent(
@@ -109,6 +127,22 @@ public class PaymentEventFactory {
                 intent.getMerchantId().toString(),
                 refundAmountCents,
                 reason != null ? reason : "Merchant requested refund",
+                intent.isTest()
+        );
+        return createOutboxEvent(intent.getId().toString(), event.getEventType(), event);
+    }
+
+    public OutboxEvent buildRefundFailedOutboxEvent(PaymentIntent intent, String refundId, long refundAmountCents, String failureReason) {
+        String eventId = UUID.randomUUID().toString();
+        RefundFailedEvent event = new RefundFailedEvent(
+                eventId,
+                EventType.REFUND_FAILED.getTopicName(),
+                Instant.now(),
+                refundId,
+                intent.getId().toString(),
+                intent.getMerchantId().toString(),
+                refundAmountCents,
+                failureReason != null ? failureReason : "Bank declined refund",
                 intent.isTest()
         );
         return createOutboxEvent(intent.getId().toString(), event.getEventType(), event);

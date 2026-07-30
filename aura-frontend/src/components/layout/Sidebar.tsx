@@ -10,7 +10,9 @@ import {
   PlayCircle,
   Terminal,
   ShieldCheck,
-  Radio
+  Radio,
+  Scale,
+  Network
 } from 'lucide-react';
 import { useMerchant } from '../../context/MerchantContext';
 
@@ -18,18 +20,20 @@ export const Sidebar: React.FC = () => {
   const { merchant } = useMerchant();
 
   const mainItems = [
-    { label: 'Overview', path: '/dashboard', icon: LayoutDashboard },
-    { label: 'Transazioni', path: '/transactions', icon: CreditCard },
-    { label: 'Registrazione & KYB', path: '/onboarding', icon: UserCheck, badge: merchant.status === 'VERIFIED' ? 'LIVE OK' : 'PENDING' },
+    { label: 'Panoramica Generale', path: '/dashboard', icon: LayoutDashboard },
+    { label: 'Transazioni Incassi', path: '/transactions', icon: CreditCard },
+    { label: 'Mastro Contabile', path: '/ledger', icon: Scale },
+    { label: 'Verifica Societaria KYB', path: '/onboarding', icon: UserCheck, badge: merchant.status === 'VERIFIED' ? 'ABILITATO' : 'IN ATTESA' },
     { label: 'Chiavi API', path: '/api-keys', icon: Key },
-    { label: 'Fatture PDF', path: '/invoices', icon: FileText },
-    { label: 'Webhooks', path: '/webhooks', icon: Webhook },
+    { label: 'Fatture e Note di Credito', path: '/invoices', icon: FileText },
+    { label: 'Notifiche Webhook', path: '/webhooks', icon: Webhook },
   ];
 
   const devToolsItems = [
-    { label: 'Checkout Demo', path: '/checkout-demo', icon: PlayCircle },
-    { label: 'Console Dev', path: '/developer', icon: Terminal },
-    { label: 'Event Stream Kafka', path: '/event-stream', icon: Radio },
+    { label: 'Simulatore Checkout', path: '/checkout-demo', icon: PlayCircle },
+    { label: 'Console Sviluppatori', path: '/developer', icon: Terminal },
+    { label: 'Flusso Eventi Kafka', path: '/event-stream', icon: Radio },
+    { label: 'Mappa Architettura', path: '/architecture', icon: Network },
   ];
 
   return (
@@ -43,16 +47,16 @@ export const Sidebar: React.FC = () => {
             </div>
             <div>
               <h1 className="font-bold text-sm text-zinc-900 tracking-tight">AuraPay</h1>
-              <p className="text-[10px] text-zinc-500 font-medium">Merchant Console</p>
+              <p className="text-[10px] text-zinc-500 font-medium">Pannello Gestione Esercente</p>
             </div>
           </div>
-          <ShieldCheck className="w-4 h-4 text-zinc-400" />
+          <ShieldCheck className="w-4 h-4 text-emerald-600" />
         </div>
 
         {/* Navigation Menu */}
         <nav className="px-3 py-4 space-y-6 text-xs">
           <div className="space-y-1">
-            <div className="px-3 pb-1.5 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Gestione</div>
+            <div className="px-3 pb-1.5 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Gestione Operativa</div>
             {mainItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -72,8 +76,8 @@ export const Sidebar: React.FC = () => {
                     <span>{item.label}</span>
                   </div>
                   {item.badge && (
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-semibold ${
-                      item.badge === 'LIVE OK' 
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold ${
+                      item.badge === 'ABILITATO' 
                         ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
                         : 'bg-amber-50 text-amber-700 border border-amber-200'
                     }`}>
@@ -86,7 +90,7 @@ export const Sidebar: React.FC = () => {
           </div>
 
           <div className="space-y-1 pt-3 border-t border-zinc-200">
-            <div className="px-3 pb-1.5 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Developer Suite</div>
+            <div className="px-3 pb-1.5 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Strumenti di Sviluppo</div>
             {devToolsItems.map((item) => {
               const Icon = item.icon;
               return (

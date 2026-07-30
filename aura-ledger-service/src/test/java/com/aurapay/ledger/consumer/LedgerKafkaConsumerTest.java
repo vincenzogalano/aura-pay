@@ -53,6 +53,8 @@ class LedgerKafkaConsumerTest {
                 "EUR",
                 "1111",
                 "AUTH_99",
+                "test@customer.it",
+                "Test Payment",
                 true
         );
         paymentJson = objectMapper.writeValueAsString(paymentEvent);

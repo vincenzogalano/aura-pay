@@ -127,6 +127,14 @@ public class MerchantService {
     }
 
     @Transactional(readOnly = true)
+    public List<MerchantResponse> getAllMerchants() {
+        return merchantRepository.findAll()
+                .stream()
+                .map(MerchantResponse::fromEntity)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public MerchantResponse getMerchant(UUID merchantId) {
         return MerchantResponse.fromEntity(getMerchantEntity(merchantId));
     }

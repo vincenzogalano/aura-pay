@@ -159,6 +159,14 @@ public class PaymentOrchestrationService {
             throw new DomainRuleViolationException("Refund amount (" + request.amountCents() + " cents) exceeds maximum refundable (" + maxRefundable + " cents)");
         }
 
+        String refundId = "ref_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+
+        // 1. Publish aura.refund.requested.v1
+        OutboxEvent reqEvent = paymentEventFactory.buildRefundRequestedOutboxEvent(intent, refundId, request.amountCents(), request.reason());
+        outboxEventRepository.save(reqEvent);
+
+        boolean forceFail = request.reason() != null && request.reason().toUpperCase().contains("FAIL");
+
         String origTxId = intent.getTransactionId() != null ? intent.getTransactionId() : "tx_bank_mock";
         BankRefundRequest bankReq = new BankRefundRequest(
                 origTxId,
@@ -167,10 +175,12 @@ public class PaymentOrchestrationService {
                 request.reason()
         );
 
-        BankRefundResponse bankResp = bankSimulatorClient.refundPayment(bankReq);
+        BankRefundResponse bankResp = forceFail ? BankRefundResponse.declined("51_FORCE_FAIL") : bankSimulatorClient.refundPayment(bankReq);
 
-        if (!bankResp.success()) {
+        if (!bankResp.success() || forceFail) {
             log.warn("Bank refund declined for PaymentIntent {}: {}", id, bankResp.responseCode());
+            OutboxEvent failedEvent = paymentEventFactory.buildRefundFailedOutboxEvent(intent, refundId, request.amountCents(), "Bank refund declined: " + bankResp.responseCode());
+            outboxEventRepository.save(failedEvent);
             throw new DomainRuleViolationException("Bank declined refund request: " + bankResp.responseCode());
         }
 
@@ -185,13 +195,11 @@ public class PaymentOrchestrationService {
 
         PaymentIntent savedIntent = paymentIntentRepository.save(intent);
 
-        String refundId = bankResp.refundTransactionId() != null
-                ? bankResp.refundTransactionId()
-                : "ref_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+        String finalRefundId = bankResp.refundTransactionId() != null ? bankResp.refundTransactionId() : refundId;
 
         OutboxEvent refundOutboxEvent = paymentEventFactory.buildRefundSucceededOutboxEvent(
                 savedIntent,
-                refundId,
+                finalRefundId,
                 request.amountCents(),
                 request.reason()
         );
@@ -203,9 +211,18 @@ public class PaymentOrchestrationService {
 
     @Transactional(readOnly = true)
     public java.util.List<PaymentIntentResponse> getPayments(Boolean isTest) {
-        log.info("Fetching all PaymentIntents with isTest={}", isTest);
+        return getPayments(null, isTest);
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<PaymentIntentResponse> getPayments(UUID merchantId, Boolean isTest) {
+        log.info("Fetching PaymentIntents with merchantId={} and isTest={}", merchantId, isTest);
         java.util.List<PaymentIntent> list;
-        if (isTest != null) {
+        if (merchantId != null && isTest != null) {
+            list = paymentIntentRepository.findByMerchantIdAndIsTestOrderByCreatedAtDesc(merchantId, isTest);
+        } else if (merchantId != null) {
+            list = paymentIntentRepository.findByMerchantIdOrderByCreatedAtDesc(merchantId);
+        } else if (isTest != null) {
             list = paymentIntentRepository.findByIsTestOrderByCreatedAtDesc(isTest);
         } else {
             list = paymentIntentRepository.findAll();

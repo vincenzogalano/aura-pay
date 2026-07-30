@@ -46,7 +46,7 @@ class WebhookNotificationE2ETest {
     void e2e_webhookSubscription_createdSuccessfully() {
         UUID merchantId = UUID.randomUUID();
 
-        WebhookSubscriptionRequest request = new WebhookSubscriptionRequest(
+        WebhookSubscriptionRequest request = WebhookSubscriptionRequest.fromEventsString(
                 merchantId,
                 "https://merchant.example.com/webhooks",
                 "whsec_testSecretKey12345",

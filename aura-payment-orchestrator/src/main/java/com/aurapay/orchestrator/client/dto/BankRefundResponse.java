@@ -11,4 +11,8 @@ public record BankRefundResponse(
     public static BankRefundResponse ok(String refundTransactionId) {
         return new BankRefundResponse(refundTransactionId, true, "100", Instant.now());
     }
+
+    public static BankRefundResponse declined(String responseCode) {
+        return new BankRefundResponse(null, false, responseCode != null ? responseCode : "51", Instant.now());
+    }
 }

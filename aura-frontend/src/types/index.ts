@@ -15,6 +15,8 @@ export interface ApiKey {
   merchantId: string;
   keyPrefix: string;
   environment: 'TEST' | 'LIVE';
+  keyType?: string;
+  rawKey?: string;
   revokedAt: string | null;
   createdAt: string;
   keySecret?: string; // Esibito solo al momento della creazione

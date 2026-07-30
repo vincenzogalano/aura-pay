@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useMerchant } from '../context/MerchantContext';
 import { paymentApi } from '../api/paymentApi';
-import { invoiceApi } from '../api/invoiceApi';
 import { vaultApi } from '../api/vaultApi';
 import type { PaymentIntent } from '../types';
 import { 
@@ -156,30 +155,49 @@ export const CheckoutSimulatorPage: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-fadeIn">
+      {/* Architectural Pattern Badges (Light Theme High Contrast) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div className="p-3.5 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center gap-3">
+          <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+          <div>
+            <div className="font-bold text-emerald-900">Cifratura Vault PCI-DSS &amp; Protezione Dati Carta</div>
+            <div className="text-[11px] text-emerald-800 mt-0.5">I dati di carta non vengono mai memorizzati in chiaro. Il numero viene cifrato in modo sicuro su <code className="font-mono bg-emerald-100 px-1 rounded text-emerald-900">aura-vault-service</code>.</div>
+          </div>
+        </div>
+
+        <div className="p-3.5 rounded-lg bg-amber-50 border border-amber-200 flex items-center gap-3">
+          <Code2 className="w-5 h-5 text-amber-600 shrink-0" />
+          <div>
+            <div className="font-bold text-amber-900">Protezione da Doppi Addebiti (Chiave di Idempotenza)</div>
+            <div className="text-[11px] text-amber-800 mt-0.5">Ogni transazione invia l'intestazione <code className="font-mono bg-amber-100 px-1 rounded text-amber-900">Idempotency-Key</code> per evitare doppi addebiti accidentali.</div>
+          </div>
+        </div>
+      </div>
+
       {/* Title */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-200 pb-5">
         <div>
-          <h1 className="text-xl font-bold text-zinc-100 tracking-tight">
-            Checkout Demo
+          <h1 className="text-xl font-bold text-zinc-900 tracking-tight">
+            Simulatore di Checkout &amp; Incasso
           </h1>
-          <p className="text-zinc-400 text-xs mt-0.5">
-            Simula un acquisto e verifica l'orchestrazione automatica dei microservizi.
+          <p className="text-zinc-500 text-xs mt-0.5">
+            Simula un acquisto online per testare l'orchestrazione automatica tra i microservizi di pagamento.
           </p>
         </div>
       </div>
 
-      {/* Preset Test Cards Selection */}
-      <div className="p-4 rounded-lg bg-zinc-900/60 border border-zinc-800 space-y-3 text-xs">
-        <div className="font-semibold text-zinc-300">Carte di Test Rapide</div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* Test Preset Cards (Light Theme High Contrast) */}
+      <div className="space-y-3">
+        <div className="font-bold text-zinc-900 text-xs uppercase tracking-wider">Carte di Prova Preimpostate</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
           {presetCards.map((preset, idx) => (
             <button
-              key={idx}
+              key={preset.label ? `preset-${preset.label}` : `preset-idx-${idx}`}
               type="button"
               onClick={() => selectPreset(preset)}
-              className="p-3 rounded bg-zinc-950 border border-zinc-800 text-left hover:border-zinc-700 transition-colors"
+              className="p-3 rounded-lg bg-white border border-zinc-200 text-left hover:border-zinc-400 hover:bg-zinc-50 transition-all shadow-xs"
             >
-              <div className="font-medium text-zinc-200">{preset.label}</div>
+              <div className="font-bold text-zinc-900">{preset.label}</div>
               <div className="text-[11px] text-zinc-500 mt-0.5">€ {preset.amount.toFixed(2)} — {preset.expectedResult}</div>
             </button>
           ))}
@@ -187,13 +205,13 @@ export const CheckoutSimulatorPage: React.FC = () => {
       </div>
 
       {/* Main Checkout Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-xs">
         {/* Left: Order Summary */}
-        <div className="p-5 rounded-lg bg-zinc-900/60 border border-zinc-800 space-y-5 flex flex-col justify-between">
-          <div className="space-y-4 text-xs">
-            <div className="flex items-center gap-2 pb-3 border-b border-zinc-800 text-zinc-100 font-bold text-sm">
-              <ShoppingBag className="w-4 h-4 text-zinc-400" />
-              <span>Riepilogo Ordine</span>
+        <div className="p-5 rounded-lg bg-white border border-zinc-200 shadow-xs space-y-5 flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-3 border-b border-zinc-100 font-bold text-zinc-900 text-sm">
+              <ShoppingBag className="w-4 h-4 text-indigo-600" />
+              <span>Riepilogo Ordine d'Acquisto</span>
             </div>
 
             <div className="space-y-2">

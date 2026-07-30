@@ -2,6 +2,15 @@ import { apiClient } from './client';
 import type { Merchant, ApiKey } from '../types';
 
 export const merchantApi = {
+  // GET /v1/merchants
+  getAllMerchants: async (): Promise<Merchant[]> => {
+    const response = await apiClient.get('/v1/merchants');
+    const data = response.data;
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.content)) return data.content;
+    return [];
+  },
+
   // POST /v1/merchants/register
   registerMerchant: async (data: { businessName: string; vatNumber: string; email: string; country: string }): Promise<{ merchant: Merchant; apiKeys: ApiKey[] }> => {
     const response = await apiClient.post('/v1/merchants/register', data);
@@ -14,8 +23,14 @@ export const merchantApi = {
     return response.data;
   },
 
+  // PUT /v1/merchants/{id}
+  updateMerchantProfile: async (merchantId: string, data: { businessName: string; email: string }): Promise<Merchant> => {
+    const response = await apiClient.put(`/v1/merchants/${merchantId}`, data);
+    return response.data;
+  },
+
   // POST /v1/merchants/{id}/verification-request
-  requestKYBVerification: async (merchantId: string, payload: { taxId: string; address: string; legalRepresentative: string }): Promise<Merchant> => {
+  requestKYBVerification: async (merchantId: string, payload: { registrationNumber: string; businessAddress: string; legalRepresentative: string }): Promise<Merchant> => {
     const response = await apiClient.post(`/v1/merchants/${merchantId}/verification-request`, payload);
     return response.data;
   },

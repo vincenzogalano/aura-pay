@@ -131,7 +131,7 @@ class FullBackendE2EFlowTest {
         assertThat(verResp.liveApiKeys()).hasSize(2);
 
         // 3. WEBHOOK SUBSCRIPTION
-        WebhookSubscriptionRequest whReq = new WebhookSubscriptionRequest(
+        WebhookSubscriptionRequest whReq = WebhookSubscriptionRequest.fromEventsString(
                 merchantId,
                 "https://fullflow.com/api/aurapay-webhooks",
                 "whsec_fullflowSecret123",

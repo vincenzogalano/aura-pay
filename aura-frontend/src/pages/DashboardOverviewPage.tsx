@@ -167,8 +167,8 @@ export const DashboardOverviewPage: React.FC = () => {
           </div>
 
           <div className="space-y-2.5">
-            {payments.slice(0, 4).map((p) => (
-              <div key={p.id} className="p-3 rounded border border-zinc-200 bg-zinc-50 flex items-center justify-between text-xs">
+            {(Array.isArray(payments) ? payments : []).slice(0, 4).map((p, idx) => (
+              <div key={p.id ? `dash-p-${p.id}` : `dash-p-idx-${idx}`} className="p-3 rounded border border-zinc-200 bg-zinc-50 flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2.5">
                   <div>
                     {p.status === 'SUCCEEDED' ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> :

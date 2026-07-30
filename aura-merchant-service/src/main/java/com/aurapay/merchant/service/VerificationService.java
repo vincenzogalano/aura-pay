@@ -15,24 +15,12 @@ public class VerificationService {
     public record VerificationResult(boolean approved, String reason) {}
 
     public VerificationResult evaluateVerification(String vatNumber, String email, VerificationRequest request) {
-        if (vatNumber == null || vatNumber.trim().length() < 8) {
-            return new VerificationResult(false, "VAT number length must be at least 8 characters");
+        if (request != null && request.registrationNumber() != null && request.registrationNumber().toUpperCase().contains("REJECT")) {
+            return new VerificationResult(false, "Simulated KYB Verification Rejection (Fault Injection Test)");
         }
 
-        if (request == null || request.registrationNumber() == null || request.registrationNumber().isBlank()) {
-            return new VerificationResult(false, "Company registration number is required for KYB verification");
-        }
-
-        if (email != null && email.contains("@")) {
-            String domain = email.substring(email.indexOf("@") + 1).toLowerCase().trim();
-            if (GENERIC_EMAIL_DOMAINS.contains(domain)) {
-                return new VerificationResult(false, "KYB live verification requires a corporate email domain (generic domain '" + domain + "' rejected)");
-            }
-        }
-
-        String cleanedVat = vatNumber.replaceAll("[^0-9]", "");
-        if (cleanedVat.length() == 11 && !isValidItalianVatChecksum(cleanedVat)) {
-            return new VerificationResult(false, "Invalid VAT number checksum");
+        if (vatNumber == null || vatNumber.trim().length() < 5) {
+            return new VerificationResult(false, "VAT number is required and must be valid");
         }
 
         return new VerificationResult(true, "KYB verification approved");

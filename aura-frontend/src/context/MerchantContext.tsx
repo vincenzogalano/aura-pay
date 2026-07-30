@@ -35,12 +35,15 @@ const defaultKeys: ApiKey[] = [
 
 interface MerchantContextType {
   merchant: Merchant;
+  allMerchants: Merchant[];
   isTest: boolean;
   activeApiKey: string;
   apiKeys: ApiKey[];
   toggleEnvironment: (mode?: boolean) => void;
   updateMerchant: (updated: Partial<Merchant>) => void;
   setMerchantProfile: (merchant: Merchant) => void;
+  selectMerchant: (merchantId: string) => void;
+  refreshMerchants: () => Promise<void>;
   addApiKey: (key: ApiKey) => void;
   revokeApiKey: (keyId: string) => void;
 }
@@ -49,6 +52,7 @@ const MerchantContext = createContext<MerchantContextType | undefined>(undefined
 
 export const MerchantProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [merchant, setMerchant] = useState<Merchant>(defaultMerchant);
+  const [allMerchants, setAllMerchants] = useState<Merchant[]>([defaultMerchant]);
 
   const [isTest, setIsTest] = useState<boolean>(() => {
     const savedMode = localStorage.getItem('aurapay_is_test');
@@ -57,16 +61,48 @@ export const MerchantProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const [apiKeys, setApiKeys] = useState<ApiKey[]>(defaultKeys);
 
-  // Carica i dati reali del merchant dall'API Backend
-  useEffect(() => {
-    merchantApi.getMerchantProfile('mch_acme_tech_2026')
-      .then((data) => setMerchant(data))
-      .catch(() => {});
+  const loadMerchantData = async (mId: string) => {
+    try {
+      const data = await merchantApi.getMerchantProfile(mId);
+      setMerchant(data);
+    } catch {
+      // Fallback
+    }
 
-    merchantApi.getApiKeys('mch_acme_tech_2026')
-      .then((keys) => setApiKeys(keys))
-      .catch(() => {});
+    try {
+      const keys = await merchantApi.getApiKeys(mId);
+      setApiKeys(keys.length > 0 ? keys : defaultKeys);
+    } catch {
+      setApiKeys(defaultKeys);
+    }
+  };
+
+  const refreshMerchants = async () => {
+    try {
+      const list = await merchantApi.getAllMerchants();
+      if (list.length > 0) {
+        setAllMerchants(list);
+      }
+    } catch (err) {
+      console.error('Errore nel recupero dell\'elenco merchant:', err);
+    }
+  };
+
+  // Carica l'elenco dei merchant e il merchant selezionato all'avvio
+  useEffect(() => {
+    const savedId = localStorage.getItem('aurapay_selected_merchant_id') || defaultMerchant.id;
+    refreshMerchants();
+    loadMerchantData(savedId);
   }, []);
+
+  const selectMerchant = (mId: string) => {
+    localStorage.setItem('aurapay_selected_merchant_id', mId);
+    const found = allMerchants.find(m => m.id === mId);
+    if (found) {
+      setMerchant(found);
+    }
+    loadMerchantData(mId);
+  };
 
   const activeKeyObj = apiKeys.find(k => k.environment === (isTest ? 'TEST' : 'LIVE') && !k.revokedAt);
   const activeApiKey = activeKeyObj?.keySecret || activeKeyObj?.keyPrefix || (isTest ? 'sk_test_a1b2' : 'sk_live_99zz');
@@ -83,10 +119,13 @@ export const MerchantProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const updateMerchant = (updated: Partial<Merchant>) => {
     setMerchant(prev => ({ ...prev, ...updated }));
+    refreshMerchants();
   };
 
   const setMerchantProfile = (newMerchant: Merchant) => {
     setMerchant(newMerchant);
+    localStorage.setItem('aurapay_selected_merchant_id', newMerchant.id);
+    refreshMerchants();
   };
 
   const addApiKey = (key: ApiKey) => {
@@ -106,12 +145,15 @@ export const MerchantProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     <MerchantContext.Provider
       value={{
         merchant,
+        allMerchants,
         isTest,
         activeApiKey,
         apiKeys,
         toggleEnvironment,
         updateMerchant,
         setMerchantProfile,
+        selectMerchant,
+        refreshMerchants,
         addApiKey,
         revokeApiKey,
       }}

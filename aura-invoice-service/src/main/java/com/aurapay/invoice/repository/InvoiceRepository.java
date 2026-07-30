@@ -23,6 +23,8 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
     Page<Invoice> findByMerchantIdOrderByCreatedAtDesc(UUID merchantId, Pageable pageable);
 
     List<Invoice> findByIsTestOrderByCreatedAtDesc(boolean isTest);
+    List<Invoice> findByMerchantIdAndIsTestOrderByCreatedAtDesc(UUID merchantId, boolean isTest);
+    List<Invoice> findByMerchantIdOrderByCreatedAtDesc(UUID merchantId);
 
     @Query("SELECT COUNT(i) FROM Invoice i WHERE i.merchantId = :merchantId AND i.invoiceType = :invoiceType AND YEAR(i.createdAt) = :year")
     long countByMerchantIdAndInvoiceTypeAndYear(@Param("merchantId") UUID merchantId,

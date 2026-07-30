@@ -24,6 +24,22 @@ public record PaymentSucceededEvent(
         }
     }
 
+    public PaymentSucceededEvent(
+            String eventId,
+            String eventType,
+            Instant occurredAt,
+            String paymentIntentId,
+            String merchantId,
+            long amountCents,
+            long feeCents,
+            String currency,
+            String cardLastFour,
+            String authorizationCode,
+            boolean isTest
+    ) {
+        this(eventId, eventType, occurredAt, paymentIntentId, merchantId, amountCents, feeCents, currency, cardLastFour, authorizationCode, null, null, isTest);
+    }
+
     @Override
     public String getEventId() { return eventId; }
     @Override

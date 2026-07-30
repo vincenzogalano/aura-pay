@@ -17,4 +17,12 @@ public record CreatePaymentIntentRequest(
         String description,
         String customerEmail,
         Boolean isTest
-) {}
+) {
+    public CreatePaymentIntentRequest(UUID merchantId, Long amountCents, String currency, String description, Boolean isTest) {
+        this(merchantId, amountCents, currency, description, null, isTest);
+    }
+
+    public CreatePaymentIntentRequest(UUID merchantId, Long amountCents, String currency, Boolean isTest) {
+        this(merchantId, amountCents, currency, null, null, isTest);
+    }
+}

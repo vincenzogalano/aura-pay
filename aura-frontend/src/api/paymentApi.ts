@@ -10,7 +10,7 @@ function ensureUuid(id?: string): string {
 
 export const paymentApi = {
   // GET /v1/payments
-  getPayments: async (params?: { isTest?: boolean; status?: PaymentStatus; limit?: number }): Promise<PaymentIntent[]> => {
+  getPayments: async (params?: { merchantId?: string; isTest?: boolean; status?: PaymentStatus; limit?: number }): Promise<PaymentIntent[]> => {
     const response = await apiClient.get('/v1/payments', { params });
     const res = response.data;
     if (Array.isArray(res)) return res;

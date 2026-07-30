@@ -23,8 +23,9 @@ public class PaymentController {
 
     @GetMapping
     public ResponseEntity<List<PaymentIntentResponse>> getPayments(
+            @RequestParam(value = "merchantId", required = false) UUID merchantId,
             @RequestParam(value = "isTest", required = false) Boolean isTest) {
-        List<PaymentIntentResponse> list = paymentOrchestrationService.getPayments(isTest);
+        List<PaymentIntentResponse> list = paymentOrchestrationService.getPayments(merchantId, isTest);
         return ResponseEntity.ok(list);
     }
 

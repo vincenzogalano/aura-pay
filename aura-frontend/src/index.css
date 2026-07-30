@@ -96,3 +96,40 @@ body {
   color: #065f46;
   border: 1px solid #a7f3d0;
 }
+
+/* Form Input Icon Positioning */
+.input-with-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-with-icon-wrapper .input-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #71717a;
+  z-index: 10;
+}
+
+.input-with-icon-wrapper input {
+  padding-left: 2.25rem !important;
+}
+
+/* WCAG High Contrast & Accessibility */
+html.high-contrast body {
+  filter: contrast(130%);
+  background-color: #09090b !important;
+}
+
+html.large-text {
+  font-size: 112.5%;
+}
+
+*:focus-visible {
+  outline: 2px solid #6366f1 !important;
+  outline-offset: 2px !important;
+}

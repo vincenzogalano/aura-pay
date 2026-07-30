@@ -235,7 +235,7 @@ export const DeveloperConsolePage: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-zinc-800/60 font-mono">
                 {kafkaEvents.map((evt, idx) => (
-                  <tr key={idx} className="hover:bg-zinc-900/40 transition-colors">
+                  <tr key={evt.name ? `evt-${evt.name}` : `evt-idx-${idx}`} className="hover:bg-zinc-900/40 transition-colors">
                     <td className="py-3 px-4 font-semibold text-zinc-200">{evt.name}</td>
                     <td className="py-3 px-4 text-zinc-400 font-sans">{evt.producer}</td>
                     <td className="py-3 px-4 text-zinc-400 font-sans">{evt.consumer}</td>

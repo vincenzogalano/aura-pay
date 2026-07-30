@@ -1,11 +1,10 @@
 import React from 'react';
 import { useMerchant } from '../../context/MerchantContext';
 import { EnvironmentBadge } from '../common/EnvironmentBadge';
-import { ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const Header: React.FC = () => {
-  const { merchant, isTest, toggleEnvironment } = useMerchant();
+  const { merchant, allMerchants, selectMerchant, isTest, toggleEnvironment } = useMerchant();
 
   const handleToggle = () => {
     if (merchant.status !== 'VERIFIED' && isTest) {
@@ -19,14 +18,26 @@ export const Header: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-30 bg-white border-b border-zinc-200 px-6 py-3.5 flex items-center justify-between">
-      {/* Left side: Environment Badge & Merchant Name */}
+      {/* Left side: Environment Badge & Merchant Selector */}
       <div className="flex items-center gap-4">
         <EnvironmentBadge isTest={isTest} />
         
-        <div className="hidden sm:flex items-center gap-2 text-xs text-zinc-500">
-          <span>AuraPay Console</span>
-          <ChevronRight className="w-3.5 h-3.5 text-zinc-400" />
-          <span className="text-zinc-900 font-medium">{merchant.businessName}</span>
+        <div className="flex items-center gap-2 text-xs text-zinc-500">
+          <span className="hidden sm:inline">Esercente:</span>
+          <select
+            value={merchant.id}
+            onChange={(e) => {
+              selectMerchant(e.target.value);
+              toast.info(`Esercente selezionato: ${allMerchants.find(m => m.id === e.target.value)?.businessName || e.target.value}`);
+            }}
+            className="shadcn-input text-xs font-semibold cursor-pointer bg-zinc-50 border-zinc-300 py-1 px-2.5 rounded text-zinc-900 focus:ring-1 focus:ring-zinc-400"
+          >
+            {(Array.isArray(allMerchants) ? allMerchants : []).map((m, idx) => (
+              <option key={m.id ? `mch-${m.id}` : `mch-idx-${idx}`} value={m.id}>
+                {m.businessName || 'Esercente Senza Nome'} ({m.status === 'VERIFIED' ? 'Verificato' : 'In Attesa'})
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -42,7 +53,7 @@ export const Header: React.FC = () => {
                 : 'text-zinc-500 hover:text-zinc-900'
             }`}
           >
-            Sandbox
+            Ambiente Prova (Sandbox)
           </button>
           <button
             onClick={handleToggle}
@@ -52,14 +63,14 @@ export const Header: React.FC = () => {
                 : 'text-zinc-500 hover:text-zinc-900'
             }`}
           >
-            Live
+            Ambiente Reale (Live)
           </button>
         </div>
 
         {/* Merchant Avatar */}
         <div className="flex items-center gap-2.5 pl-3 border-l border-zinc-200">
           <div className="w-7 h-7 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-xs">
-            {merchant.businessName.substring(0, 2).toUpperCase()}
+            {(merchant.businessName || 'AP').substring(0, 2).toUpperCase()}
           </div>
           <div className="hidden lg:block text-left text-xs">
             <div className="font-semibold text-zinc-900">{merchant.businessName}</div>

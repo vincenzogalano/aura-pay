@@ -10,4 +10,6 @@ import java.util.UUID;
 @Repository
 public interface PaymentIntentRepository extends JpaRepository<PaymentIntent, UUID> {
     List<PaymentIntent> findByIsTestOrderByCreatedAtDesc(boolean isTest);
+    List<PaymentIntent> findByMerchantIdAndIsTestOrderByCreatedAtDesc(UUID merchantId, boolean isTest);
+    List<PaymentIntent> findByMerchantIdOrderByCreatedAtDesc(UUID merchantId);
 }

@@ -7,9 +7,12 @@ import {
   Filter, 
   RotateCcw, 
   X, 
-  Eye
+  Eye,
+  HelpCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+import { getPaymentStatusInfo } from '../utils/statusUtils';
 
 export const TransactionsPage: React.FC = () => {
   const { merchant, isTest } = useMerchant();
@@ -29,7 +32,7 @@ export const TransactionsPage: React.FC = () => {
     const fetchPayments = async () => {
       setLoading(true);
       try {
-        const data = await paymentApi.getPayments({ isTest });
+        const data = await paymentApi.getPayments({ merchantId: merchant.id, isTest });
         setPayments(data);
       } catch (err) {
         toast.error('Errore nel caricamento delle transazioni');
@@ -122,23 +125,34 @@ export const TransactionsPage: React.FC = () => {
       {/* Title */}
       <div className="border-b border-zinc-200 pb-5">
         <h1 className="text-xl font-bold text-zinc-900 tracking-tight">
-          Transazioni
+          Transazioni &amp; Incassi Esercente
         </h1>
         <p className="text-zinc-500 text-xs mt-0.5">
-          Storico dei pagamenti autorizzati ed elaborazione storni/rimborsi.
+          Storico dei pagamenti autorizzati ed elaborazione storni/rimborsi in tempo reale.
+        </p>
+      </div>
+
+      {/* Guida Sezione Transazioni */}
+      <div className="p-4 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs space-y-1.5">
+        <div className="flex items-center gap-2 font-bold text-indigo-950">
+          <HelpCircle className="w-4 h-4 text-indigo-600 shrink-0" />
+          <span>Guida Operativa alla Gestione Transazioni</span>
+        </div>
+        <p className="text-[11px] text-indigo-900 leading-relaxed">
+          In questa schermata consulti gli incassi dell'esercente <strong>{merchant.businessName}</strong>. Puoi cercare transazioni per email del cliente o ID univoco, filtrare per stato (Pagamento Confermato, Rifiutato, Rimborsato) ed eseguire rimborsi totali o parziali. Ogni rimborso aggiorna istantaneamente il mastro contabile ed emette la nota di credito.
         </p>
       </div>
 
       {/* Filter & Search Bar */}
       <div className="p-4 rounded-lg bg-white border border-zinc-200 shadow-xs flex flex-col md:flex-row gap-4 justify-between items-center text-xs">
-        <div className="relative w-full md:w-80">
-          <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-2.5" />
+        <div className="input-with-icon-wrapper w-full md:w-80">
+          <Search className="w-4 h-4 input-icon" />
           <input
             type="text"
             placeholder="Cerca per cliente, ID o descrizione..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="shadcn-input pl-9 w-full text-xs"
+            className="shadcn-input w-full text-xs"
           />
         </div>
 
@@ -189,8 +203,8 @@ export const TransactionsPage: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredPayments.map((p) => (
-                  <tr key={p.id} className="hover:bg-zinc-50 transition-colors">
+                filteredPayments.map((p, idx) => (
+                  <tr key={p.id ? `tx-${p.id}` : `tx-idx-${idx}`} className="hover:bg-zinc-50 transition-colors">
                     <td className="py-3.5 px-4 font-mono font-medium text-zinc-900">{p.id}</td>
                     <td className="py-3.5 px-4">
                       <div className="font-medium text-zinc-900">{p.description || 'Pagamento online'}</div>
@@ -205,15 +219,18 @@ export const TransactionsPage: React.FC = () => {
                       ) : null}
                     </td>
                     <td className="py-3.5 px-4">
-                      <span className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded border inline-flex items-center gap-1 ${
-                        p.status === 'SUCCEEDED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                        p.status === 'FAILED' ? 'bg-rose-50 text-rose-700 border-rose-200' :
-                        'bg-amber-50 text-amber-700 border-amber-200'
-                      }`}>
-                        {p.status === 'SUCCEEDED' ? 'APPROVATO' :
-                         p.status === 'FAILED' ? 'RIFIUTATO' :
-                         p.status === 'PARTIALLY_REFUNDED' ? 'PARZ. RIMBORSATO' : 'RIMBORSATO'}
-                      </span>
+                      {(() => {
+                        const st = getPaymentStatusInfo(p.status);
+                        return (
+                          <span 
+                            title={st.description}
+                            className={`text-[10px] font-sans font-semibold px-2 py-0.5 rounded border inline-flex items-center gap-1.5 ${st.bgClass} ${st.textClass} ${st.borderClass}`}
+                          >
+                            <span>{st.icon}</span>
+                            <span>{st.label}</span>
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="py-3.5 px-4 text-zinc-500">{formatDate(p.createdAt)}</td>
                     <td className="py-3.5 px-4 text-right space-x-2">

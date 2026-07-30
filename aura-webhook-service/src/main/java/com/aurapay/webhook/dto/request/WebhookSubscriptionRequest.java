@@ -23,6 +23,21 @@ public record WebhookSubscriptionRequest(
         @JsonAlias("events")
         JsonNode subscribedEvents
 ) {
+    private static final com.fasterxml.jackson.databind.ObjectMapper MAPPER = new com.fasterxml.jackson.databind.ObjectMapper();
+
+    public static WebhookSubscriptionRequest fromEventsString(UUID merchantId, String targetUrl, String secretKey, Boolean enabled, String subscribedEventsStr) {
+        return new WebhookSubscriptionRequest(merchantId, targetUrl, secretKey, enabled, parseJsonNode(subscribedEventsStr));
+    }
+
+    private static JsonNode parseJsonNode(String str) {
+        if (str == null) return null;
+        try {
+            return MAPPER.readTree(str.startsWith("[") ? str : "\"" + str + "\"");
+        } catch (Exception e) {
+            return new com.fasterxml.jackson.databind.node.TextNode(str);
+        }
+    }
+
     public String getSubscribedEventsString() {
         if (subscribedEvents == null || subscribedEvents.isNull()) {
             return "*";

@@ -74,13 +74,13 @@ export const ApiKeysPage: React.FC = () => {
   return (
     <div className="space-y-6 max-w-5xl animate-fadeIn">
       {/* Title */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-200 pb-5">
         <div>
-          <h1 className="text-xl font-bold text-zinc-100 tracking-tight">
+          <h1 className="text-xl font-bold text-zinc-900 tracking-tight">
             Gestione Chiavi API
           </h1>
-          <p className="text-zinc-400 text-xs mt-0.5">
-            Genera e gestisci le tue chiavi segrete TEST e LIVE per l'autenticazione delle richieste API Gateway.
+          <p className="text-zinc-500 text-xs mt-0.5">
+            Genera e gestisci le tue chiavi segrete di prova (Sandbox) e di produzione (Live) per l'autenticazione.
           </p>
         </div>
 
@@ -90,8 +90,8 @@ export const ApiKeysPage: React.FC = () => {
             disabled={generating}
             className="btn-shadcn-secondary text-xs font-semibold px-3 py-2 inline-flex items-center gap-1.5 disabled:opacity-50"
           >
-            <Plus className="w-4 h-4 text-amber-400" />
-            <span>Genera Chiavi TEST</span>
+            <Plus className="w-4 h-4 text-amber-600" />
+            <span>Genera Chiave PROVA (Sandbox)</span>
           </button>
 
           <button
@@ -100,60 +100,61 @@ export const ApiKeysPage: React.FC = () => {
             className="btn-shadcn-primary text-xs font-semibold px-3 py-2 inline-flex items-center gap-1.5 disabled:opacity-50"
           >
             <Plus className="w-4 h-4 text-emerald-400" />
-            <span>{generating ? 'Generazione...' : 'Genera Chiavi LIVE'}</span>
+            <span>{generating ? 'Generazione in corso...' : 'Genera Chiave REALE (Live)'}</span>
           </button>
         </div>
       </div>
 
-      {/* Keys Table (Shadcn style) */}
-      <div className="rounded-lg border border-zinc-800 overflow-hidden bg-zinc-950">
+      {/* Keys Table (High Contrast Light Theme) */}
+      <div className="rounded-lg border border-zinc-200 overflow-hidden bg-white shadow-xs">
         <table className="w-full text-left border-collapse text-xs">
           <thead>
-            <tr className="border-b border-zinc-800 text-[11px] font-semibold text-zinc-400 uppercase tracking-wider bg-zinc-900/60">
+            <tr className="border-b border-zinc-200 text-[11px] font-bold text-zinc-600 uppercase tracking-wider bg-zinc-50">
               <th className="py-3 px-4">Ambiente</th>
-              <th className="py-3 px-4">Tipo</th>
-              <th className="py-3 px-4">Prefisso / Valore</th>
+              <th className="py-3 px-4">Tipo Chiave</th>
+              <th className="py-3 px-4">Prefisso / Valore Segreto</th>
               <th className="py-3 px-4">Data Creazione</th>
               <th className="py-3 px-4 text-right">Azioni</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-800/60">
+          <tbody className="divide-y divide-zinc-100 font-mono">
             {apiKeys.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-8 text-center text-zinc-500">
-                  Nessuna chiave API presente. Genera una chiave TEST o LIVE per iniziare.
+                <td colSpan={5} className="py-8 text-center text-zinc-400 font-sans">
+                  Nessuna chiave API presente. Genera una chiave Sandbox o Live per iniziare.
                 </td>
               </tr>
             ) : (
-              apiKeys.map((key: ApiKey) => {
+              (Array.isArray(apiKeys) ? apiKeys : []).map((key: ApiKey, idx: number) => {
                 const isVisible = !!visibleKeys[key.id];
                 const displaySecret = isVisible ? (key.keySecret || key.rawKey || key.keyPrefix) : `${key.keyPrefix}_••••••••••••••••••••`;
                 const isRevoked = !!key.revokedAt;
+                const rowKey = key.id ? `apk-${key.id}` : `apk-idx-${idx}`;
 
                 return (
-                  <tr key={key.id} className="hover:bg-zinc-900/40 transition-colors">
+                  <tr key={rowKey} className="hover:bg-zinc-50 transition-colors">
                     <td className="py-3.5 px-4">
-                      <span className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded border ${
-                        key.environment === 'TEST' ? 'bg-amber-950 text-amber-400 border-amber-800' : 'bg-emerald-950 text-emerald-400 border-emerald-800'
+                      <span className={`text-[10px] font-sans font-semibold px-2 py-0.5 rounded border ${
+                        key.environment === 'TEST' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                       }`}>
-                        {key.environment}
+                        {key.environment === 'TEST' ? 'PROVA (Sandbox)' : 'REALE (Live)'}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 font-mono text-zinc-400">
-                      {key.keyType || (key.keyPrefix?.startsWith('pk') ? 'PUBLIC' : 'SECRET')}
+                    <td className="py-3.5 px-4 text-zinc-700 font-sans font-medium">
+                      {key.keyType === 'PUBLISHABLE' || key.keyPrefix?.startsWith('pk') ? 'Pubblica (Client)' : 'Segreta (Server)'}
                     </td>
-                    <td className="py-3.5 px-4 font-mono text-zinc-200">
-                      {isRevoked ? <span className="line-through text-zinc-600">{displaySecret}</span> : displaySecret}
+                    <td className="py-3.5 px-4 font-bold text-zinc-900">
+                      {isRevoked ? <span className="line-through text-zinc-400">{displaySecret}</span> : displaySecret}
                     </td>
-                    <td className="py-3.5 px-4 text-zinc-400">
+                    <td className="py-3.5 px-4 text-zinc-500 font-sans">
                       {key.createdAt ? new Date(key.createdAt).toLocaleDateString('it-IT') : 'Oggi'}
                     </td>
-                    <td className="py-3.5 px-4 text-right space-x-2">
+                    <td className="py-3.5 px-4 text-right space-x-2 font-sans">
                       {!isRevoked && (
                         <>
                           <button
                             onClick={() => toggleVisibility(key.id)}
-                            className="p-1.5 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300"
+                            className="p-1.5 rounded bg-zinc-100 hover:bg-zinc-200 text-zinc-700 transition-colors"
                             title={isVisible ? 'Nascondi' : 'Mostra'}
                           >
                             {isVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
@@ -161,21 +162,21 @@ export const ApiKeysPage: React.FC = () => {
 
                           <button
                             onClick={() => copyToClipboard(key.keySecret || key.rawKey || key.keyPrefix, key.id)}
-                            className="p-1.5 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300"
+                            className="p-1.5 rounded bg-zinc-100 hover:bg-zinc-200 text-zinc-700 transition-colors"
                             title="Copia"
                           >
-                            {copiedId === key.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            {copiedId === key.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                           </button>
 
                           <button
                             onClick={() => handleRevoke(key.id)}
-                            className="px-2.5 py-1 rounded bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800 text-xs transition-colors"
+                            className="px-2.5 py-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold transition-colors"
                           >
                             Revoca
                           </button>
                         </>
                       )}
-                      {isRevoked && <span className="text-xs text-rose-500 font-medium">Revocata</span>}
+                      {isRevoked && <span className="text-xs text-rose-600 font-semibold">Revocata</span>}
                     </td>
                   </tr>
                 );

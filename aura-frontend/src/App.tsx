@@ -11,6 +11,8 @@ import { WebhooksPage } from './pages/WebhooksPage';
 import { CheckoutSimulatorPage } from './pages/CheckoutSimulatorPage';
 import { DeveloperConsolePage } from './pages/DeveloperConsolePage';
 import { EventStreamPage } from './pages/EventStreamPage';
+import { LedgerPage } from './pages/LedgerPage';
+import { ArchitecturePage } from './pages/ArchitecturePage';
 import { Toaster } from 'sonner';
 
 export const App: React.FC = () => {
@@ -23,6 +25,7 @@ export const App: React.FC = () => {
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardOverviewPage />} />
             <Route path="transactions" element={<TransactionsPage />} />
+            <Route path="ledger" element={<LedgerPage />} />
             <Route path="onboarding" element={<OnboardingPage />} />
             <Route path="api-keys" element={<ApiKeysPage />} />
             <Route path="invoices" element={<InvoicesPage />} />
@@ -30,6 +33,7 @@ export const App: React.FC = () => {
             <Route path="checkout-demo" element={<CheckoutSimulatorPage />} />
             <Route path="developer" element={<DeveloperConsolePage />} />
             <Route path="event-stream" element={<EventStreamPage />} />
+            <Route path="architecture" element={<ArchitecturePage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Routes>

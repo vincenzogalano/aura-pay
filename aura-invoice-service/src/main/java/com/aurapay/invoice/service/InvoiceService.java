@@ -233,8 +233,24 @@ public class InvoiceService {
 
     @Transactional(readOnly = true)
     public java.util.List<InvoiceResponse> getAllInvoices(Boolean isTest) {
+        return getAllInvoices(null, isTest);
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<InvoiceResponse> getAllInvoices(String merchantIdStr, Boolean isTest) {
         java.util.List<Invoice> list;
-        if (isTest != null) {
+        UUID merchantId = null;
+        if (merchantIdStr != null && !merchantIdStr.isBlank()) {
+            try {
+                merchantId = UUID.fromString(merchantIdStr);
+            } catch (IllegalArgumentException ignored) {}
+        }
+
+        if (merchantId != null && isTest != null) {
+            list = invoiceRepository.findByMerchantIdAndIsTestOrderByCreatedAtDesc(merchantId, isTest);
+        } else if (merchantId != null) {
+            list = invoiceRepository.findByMerchantIdOrderByCreatedAtDesc(merchantId);
+        } else if (isTest != null) {
             list = invoiceRepository.findByIsTestOrderByCreatedAtDesc(isTest);
         } else {
             list = invoiceRepository.findAll();

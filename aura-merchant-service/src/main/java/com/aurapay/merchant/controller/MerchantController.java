@@ -29,6 +29,12 @@ public class MerchantController {
         }
     }
 
+    @GetMapping
+    public ResponseEntity<List<MerchantResponse>> getAllMerchants() {
+        List<MerchantResponse> response = merchantService.getAllMerchants();
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/register")
     public ResponseEntity<RegisterMerchantResponse> registerMerchant(@Valid @RequestBody RegisterMerchantRequest request) {
         RegisterMerchantResponse response = merchantService.registerMerchant(request);

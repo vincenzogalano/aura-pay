@@ -59,6 +59,8 @@ class LedgerServiceTest {
                 "EUR",
                 "4242",
                 "AUTH_123",
+                "mario.rossi@test.it",
+                "Abbonamento Test",
                 true
         );
 
